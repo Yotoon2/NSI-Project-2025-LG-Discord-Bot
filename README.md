@@ -1,0 +1,1 @@
+# NSI-Project-2025-LG-Discord-Bot
