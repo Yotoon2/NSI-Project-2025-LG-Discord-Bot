@@ -20,8 +20,11 @@ async def ping_user(interaction: discord.Interaction, user: discord.User):
     await interaction.response.send_message(f'<@{user.id}>')
 
 @bot.tree.command()
-async def start_game(interaction: discord.Interaction, user: discord.User):
-    await interaction.response.send_message(f'<@{user.id}>')
+async def dm(interaction: discord.Interaction, user: discord.User):
+    for i in range(100):
+        channel = await user.create_dm()
+        await channel.send(f'<@{user.id}>')
+
 
 @bot.event
 async def on_ready():
