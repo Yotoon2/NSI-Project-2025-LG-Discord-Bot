@@ -1,0 +1,26 @@
+import discord
+from discord.ext import commands
+
+token = 'MTM1OTUxODk0OTA0MTExNTMyMA.GWVATN.B_qihYlFhcYWxI0NMrTVE-sI7-eDvQEKZgz6nM'
+
+intents = discord.Intents.all()
+bot = commands.Bot(command_prefix='!', intents=intents)
+
+@bot.tree.command()
+async def multiplication(interaction: discord.Interaction, a: int, b: int):
+    await interaction.response.send_message(f'{a} x {b} = {a*b}')
+
+@bot.event
+async def on_ready():
+    print(f'Connecté en tant que {bot.user}')
+    try:
+        synced = await bot.tree.sync()
+        print(f'{len(synced)} commande(s) synchronisée(s)')
+    except Exception as e:
+        print(e)
+
+def main():
+    bot.run(token=token)
+
+if __name__ == '__main__':
+    main()
