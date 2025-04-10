@@ -1,4 +1,5 @@
 import discord
+import math
 from discord.ext import commands
 
 token = 'MTM1OTUxODk0OTA0MTExNTMyMA.GWVATN.B_qihYlFhcYWxI0NMrTVE-sI7-eDvQEKZgz6nM'
@@ -9,6 +10,18 @@ bot = commands.Bot(command_prefix='!', intents=intents)
 @bot.tree.command()
 async def multiplication(interaction: discord.Interaction, a: int, b: int):
     await interaction.response.send_message(f'{a} x {b} = {a*b}')
+
+@bot.tree.command()
+async def racine_carre(interaction: discord.Interaction, a: int):
+    await interaction.response.send_message(f'{math.sqrt(a)}')
+
+@bot.tree.command()
+async def ping_user(interaction: discord.Interaction, user: discord.User):
+    await interaction.response.send_message(f'<@{user.id}>')
+
+@bot.tree.command()
+async def start_game(interaction: discord.Interaction, user: discord.User):
+    await interaction.response.send_message(f'<@{user.id}>')
 
 @bot.event
 async def on_ready():
@@ -24,3 +37,4 @@ def main():
 
 if __name__ == '__main__':
     main()
+
