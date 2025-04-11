@@ -1,11 +1,19 @@
 import discord
 import math
 from discord.ext import commands
+import asyncio
 
 token = 'MTM1OTUxODk0OTA0MTExNTMyMA.GWVATN.B_qihYlFhcYWxI0NMrTVE-sI7-eDvQEKZgz6nM'
 
 intents = discord.Intents.all()
 bot = commands.Bot(command_prefix='!', intents=intents)
+
+@bot.tree.command()
+async def timer(interaction: discord.Message, time: int):
+    await interaction.response.send_message(f"Il reste {time} secondes.")
+    for i in range(0, time):
+        await asyncio.sleep(1)
+        await interaction.edit_original_response(content=f"Il reste {time-1-i} secondes.")
 
 @bot.tree.command()
 async def multiplication(interaction: discord.Interaction, a: int, b: int):
