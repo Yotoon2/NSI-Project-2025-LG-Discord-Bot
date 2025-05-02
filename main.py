@@ -295,6 +295,9 @@ async def annonce_jour(context, cible_lg, cible_soso):
 async def checkifdead(players):
     pass
 
+@bot.command()
+async def clear_t(context):
+    await clear_threads(context)
 
 @bot.command()
 async def start(context):
