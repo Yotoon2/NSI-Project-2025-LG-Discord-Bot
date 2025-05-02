@@ -151,15 +151,24 @@ async def action_sorciere(context, soso_chat, sorciere, players, n_nuits, potion
             pdv_menu = None
             print("pas de cible lg")
         else:
-            if potion_vie == 0: # potion vie deja utilisé
+        #    if potion_vie == 0: # potion vie deja utilisé
+        #        print("plus de potion de vie")
+        #        pdv_menu = None
+        #        await soso_chat.send(content=f"Vous avez déjà utilisé la potion de vie.")
+            if potion_vie == False:  # potion vie deja utilisé
                 print("plus de potion de vie")
                 pdv_menu = None
                 await soso_chat.send(content=f"Vous avez déjà utilisé la potion de vie.")
+
             else: #potion vie pas encore utilisé
                 pdv_menu = await button(context=soso_chat, potion_vie=potion_vie, cible_lg=cible_lg) #potion de vie
                 print("pdv")
 
-        if potion_mort == 0: #potion mort deja utilisé
+        #if potion_mort == 0: #potion mort deja utilisé
+        #    print("plus de potion de mort")
+        #    pdm_menu = 0
+        #    await soso_chat.send(content=f"Vous avez déjà utilisé la potion de mort.")
+        if potion_mort == False: #potion mort deja utilisé
             print("plus de potion de mort")
             pdm_menu = 0
             await soso_chat.send(content=f"Vous avez déjà utilisé la potion de mort.")
@@ -169,19 +178,8 @@ async def action_sorciere(context, soso_chat, sorciere, players, n_nuits, potion
 
             await soso_chat.edit(locked=False)
             # await context.channel.set_permissions(sorciere.member, send_messages_in_threads=False)
-            soso_timer = Timer(soso_chat, 15, n_nuits)
+            soso_timer = Timer(soso_chat, 5, n_nuits)
             await soso_timer.role_timer()
-
-            if pdm_menu is None:
-                liste.append(potion_mort)
-            else:
-                liste.append(pdm_menu)
-            if pdv_menu is None:
-                liste.append(potion_vie)
-                return liste
-            else:
-                liste.append(pdv_menu)
-                return liste
 
 
 
@@ -288,7 +286,7 @@ async def annonce_jour(context, cible_lg, cible_soso):
     if cible_soso is not None:
         await context.send(content=f"<@{cible_soso.id}> s'est fait tué(e) par la sorcière cette nuit.")
         await asyncio.sleep(2)
-        await context.send(content=f"Il était **{cible_lg.role}**")
+        await context.send(content=f"Il était **{cible_soso.role}**")
     elif cible_lg is None and cible_soso is None:
         await context.send(content=f"Personne n'est mort cette nuit.")
 
@@ -348,8 +346,10 @@ async def start(context):
     await start.start_timer() # compteur de départ
 
     dead_ppl = []
-    potion_vie = 1
-    potion_mort = 1
+    #potion_vie = 1
+    #potion_mort = 1
+    potion_vie = True
+    potion_mort = True
     n_jours = 1
     n_nuits = 1
     temps_discussion = 12
@@ -384,12 +384,11 @@ async def start(context):
         await reset_votes(context, players) #vote reset
         await lg_chat.edit(locked=True) #lock chat des lgs
 
-        actions_soso = await action_sorciere(context=context, soso_chat=soso_chat, sorciere=sorciere, players=players, n_nuits=n_nuits,
+        await action_sorciere(context=context, soso_chat=soso_chat, sorciere=sorciere, players=players, n_nuits=n_nuits,
                                            potion_vie=potion_vie, potion_mort=potion_mort, cible_lg=cible_lg)
-        if potion_vie != actions_soso[1]: #actions_soso[1] = nb potions de vie restantes
-            cible_lg = None
-            potion_vie = actions_soso[1]
-        await annonce_jour(context, cible_lg, cible_soso=actions_soso[0])
+        cible_soso = await cible_vote(soso_chat, players, sorciere)
+        cible_soso = cible_soso[0]
+        await annonce_jour(context, cible_lg, cible_soso)
         if cible_vovo is not None:
             await vovo_chat.send(f"La personne que vous avez espionné est **{cible_vovo.role}**.")
         n_nuits += 1
