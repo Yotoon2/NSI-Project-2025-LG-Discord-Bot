@@ -296,10 +296,6 @@ async def checkifdead(players):
     pass
 
 @bot.command()
-async def clear_t(context):
-    await clear_threads(context)
-
-@bot.command()
 async def start(context):
     """Starts the game"""
     print("Starting...")
