@@ -10,7 +10,7 @@ class SelectVote(discord.ui.Select):
         self.player = player
         options = []
         for player in self.players:
-            options.append(discord.SelectOption(label=f"{player.name}"))
+            options.append(discord.SelectOption(label=f"{player.name}", value="4321321"))
         super().__init__(placeholder="Select an option",max_values=1,min_values=1,options=options)
 
     async def callback(self, interaction: discord.Interaction):
