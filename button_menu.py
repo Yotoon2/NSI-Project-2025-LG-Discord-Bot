@@ -9,15 +9,16 @@ class ButtonMenu(discord.ui.View): # Create a class called MyView that subclasse
 
     @discord.ui.button(label="Sauver", row=0, style=discord.ButtonStyle.green) # Create a button with the label "😎 Click me!" with color Blurple
     async def button_callback1(self, interaction, button):
-        if self.potion_vie == 0:
+        if self.potion_vie == False:
             await interaction.response.send(f"Vous avez déjà utilisé la potion de vie.")
         else:
             for i in range(len(self.children)):
                 self.children[i].disabled = True
             await interaction.response.edit_message(view=self)
         await interaction.followup.send(f"Vous avez décidé de ***sauver*** **{self.cible_lg.name}**.") # Send a message when the button is clicked
-        self.potion_vie -= 1
-        return self.potion_vie
+        #self.potion_vie = False
+        #self.cible_lg = None
+        #return self.potion_vie, self.cible_lg
 
 
     @discord.ui.button(label="Ne rien faire", row=0, style=discord.ButtonStyle.red)

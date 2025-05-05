@@ -17,9 +17,12 @@ bot = commands.Bot(command_prefix='!', intents=intents)
 # @bot.command() # Create a slash command
 async def button(context, potion_vie, cible_lg):
     print('button')
-    potion_vie = await context.send(content=f"**{cible_lg.name}** est visé(e) par les loups-garous ce soir.", view=ButtonMenu(potion_vie=potion_vie, cible_lg=cible_lg)) # Send a message with our View class that contains the button
+    bouton_soso = ButtonMenu(potion_vie=potion_vie, cible_lg=cible_lg)
+    potion_vie = await context.send(content=f"**{cible_lg.name}** est visé(e) par les loups-garous ce soir.",
+                                    view=bouton_soso) # Send a message with our View class that contains the button
+    #print(bouton_soso.button_callback1)
     print('button2')
-    return potion_vie
+    #return potion_vie
 
 async def menu(context, players: list, text: str, player=None): #Select est la classe a afficher, player est le joueur avec un role qui agit de nuit s'il y en a un
     """commande pour menu deroulant"""
@@ -161,7 +164,7 @@ async def action_sorciere(context, soso_chat, sorciere, players, n_nuits, potion
                 await soso_chat.send(content=f"Vous avez déjà utilisé la potion de vie.")
 
             else: #potion vie pas encore utilisé
-                pdv_menu = await button(context=soso_chat, potion_vie=potion_vie, cible_lg=cible_lg) #potion de vie
+                pdv_menu = await button(context=soso_chat, potion_vie=potion_vie, cible_lg=cible_lg)
                 print("pdv")
 
         #if potion_mort == 0: #potion mort deja utilisé
@@ -246,13 +249,13 @@ async def cible_vote(context, players, voteur):
             players.remove(cible[0])
         elif type(voteur) == list:  # LG
             await context.send(content=f"La personne qui va mourir est **{cible[0].name}**.")
-            return cible
+            return cible[0]
         elif voteur.role == "Voyante":
             await context.send(content=f"La personne dont vous allez révéler le rôle est **{cible[0].name}**.")
-            return cible
+            return cible[0]
         elif voteur.role == "Sorciere":
             await context.send(content=f"La personne qui recevra la potion de mort est **{cible[0].name}**.")
-            return cible
+            return cible[0]
 
     else: #égalité
         if voteur == None:
@@ -289,8 +292,6 @@ async def annonce_jour(context, cible_lg, cible_soso):
         await context.send(content=f"Il était **{cible_soso.role}**")
     elif cible_lg is None and cible_soso is None:
         await context.send(content=f"Personne n'est mort cette nuit.")
-
-
 
 async def checkifdead(players):
     pass
@@ -379,15 +380,15 @@ async def start(context):
         await vovo_chat.edit(locked=True) #lock le chat de la vovo
 
         await action_lg(context, lg_chat, lgs, players, n_nuits) #lgs choisissent cible
-        cible_lg = await cible_vote(lg_chat, players, lgs) #cible des lgs (type class player)
+        cible_lg = await cible_vote(lg_chat, players, lgs)
         await reset_votes(context, players) #vote reset
         await lg_chat.edit(locked=True) #lock chat des lgs
 
         await action_sorciere(context=context, soso_chat=soso_chat, sorciere=sorciere, players=players, n_nuits=n_nuits,
                                            potion_vie=potion_vie, potion_mort=potion_mort, cible_lg=cible_lg)
         cible_soso = await cible_vote(soso_chat, players, sorciere)
-        cible_soso = cible_soso[0]
         await annonce_jour(context, cible_lg, cible_soso)
+        await soso_chat.edit(locked=True)
         if cible_vovo is not None:
             await vovo_chat.send(f"La personne que vous avez espionné est **{cible_vovo.role}**.")
         n_nuits += 1
