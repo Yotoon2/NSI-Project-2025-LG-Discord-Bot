@@ -218,6 +218,11 @@ async def action_sorciere(context, soso_chat, sorciere, players, n_nuits, potion
     return pdv_menu.cible_lg
 
 
+async def dico_vote(context, players):
+    dico = {}
+    for player in players:
+        dico[player.name] = player
+    return dico
 
 
 
@@ -334,8 +339,6 @@ async def annonce_jour(context, cible_lg, cible_soso):
     elif cible_lg is None and cible_soso is None:
         await context.send(content=f"Personne n'est mort cette nuit.")
 
-async def checkifdead(players):
-    pass
 
 @bot.command()
 async def start(context):
@@ -345,7 +348,6 @@ async def start(context):
 
     vc = await vc_members(context) #liste des personnes présentes dans le voc
     n_players = len(vc) #nombre de joueurs dans la partie
-    channel = context
 
     main_thread = await thread(context, "Le Village") #creation du thread privé et renvoie son id
     cupi_thread = await thread(context, "Cupidon")  # créé thread privé du cupidon
@@ -356,6 +358,8 @@ async def start(context):
 
     context = bot.get_channel(main_thread) #changement de context: channel -> thread
     players = await role_assign(context, n_players, vc) #liste de joueur de type class Player
+
+    
 
     cupidon, voyante, lgs, pf, sorciere = None, None, [], None, None
     for player in players:
