@@ -21,7 +21,8 @@ async def button(context, potion_vie, cible_lg):
     potion_vie = await context.send(content=f"**{cible_lg.name}** est visé(e) par les loups-garous ce soir.",
                                     view=bouton_soso) # Send a message with our View class that contains the button
     #print(bouton_soso.button_callback1)
-    print('button2')
+    print(f'fonction bouton : {bouton_soso.cible_lg}, reste :')
+    return bouton_soso
     #return potion_vie
 
 async def menu(context, players: list, text: str, player=None): #Select est la classe a afficher, player est le joueur avec un role qui agit de nuit s'il y en a un
@@ -142,6 +143,7 @@ async def action_lg(context, lg_chat, lgs, players, n_nuits):
 
 async def action_sorciere(context, soso_chat, sorciere, players, n_nuits, potion_vie, potion_mort, cible_lg):
     liste = []
+    pdv_menu = None
     if sorciere == None:
         print("Il n'y a pas de sorcière dans la partie")
     elif sorciere.state == False:
@@ -151,7 +153,6 @@ async def action_sorciere(context, soso_chat, sorciere, players, n_nuits, potion
         print("soso")
         if cible_lg is None:
             await soso_chat.send(f"Aucune personne n'a été ciblé ce soir.")
-            pdv_menu = None
             print("pas de cible lg")
         else:
         #    if potion_vie == 0: # potion vie deja utilisé
@@ -165,7 +166,7 @@ async def action_sorciere(context, soso_chat, sorciere, players, n_nuits, potion
 
             else: #potion vie pas encore utilisé
                 pdv_menu = await button(context=soso_chat, potion_vie=potion_vie, cible_lg=cible_lg)
-                print("pdv")
+                print(pdv_menu.cible_lg)
 
         #if potion_mort == 0: #potion mort deja utilisé
         #    print("plus de potion de mort")
@@ -183,7 +184,8 @@ async def action_sorciere(context, soso_chat, sorciere, players, n_nuits, potion
             # await context.channel.set_permissions(sorciere.member, send_messages_in_threads=False)
             soso_timer = Timer(soso_chat, 5, n_nuits)
             await soso_timer.role_timer()
-
+    print(f'cible lg : {pdv_menu.cible_lg}')
+    return pdv_menu.cible_lg
 
 
 
@@ -384,7 +386,7 @@ async def start(context):
         await reset_votes(context, players) #vote reset
         await lg_chat.edit(locked=True) #lock chat des lgs
 
-        await action_sorciere(context=context, soso_chat=soso_chat, sorciere=sorciere, players=players, n_nuits=n_nuits,
+        cible_lg = await action_sorciere(context=context, soso_chat=soso_chat, sorciere=sorciere, players=players, n_nuits=n_nuits,
                                            potion_vie=potion_vie, potion_mort=potion_mort, cible_lg=cible_lg)
         cible_soso = await cible_vote(soso_chat, players, sorciere)
         await annonce_jour(context, cible_lg, cible_soso)

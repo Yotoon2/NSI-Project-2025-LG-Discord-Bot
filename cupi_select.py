@@ -1,8 +1,5 @@
-import discord
-import sys
-from ast import literal_eval
 
-class SelectVote(discord.ui.Select):
+class SelectLove(discord.ui.Select):
     """menu deroulant (25 options max)"""
     print("select vote")
     def __init__(self, players):
@@ -26,42 +23,22 @@ class SelectVote(discord.ui.Select):
             voteur.previous_vote.nvote -= 1
             voteur.previous_vote = personne_votee
             personne_votee.nvote += 1
-            if self.player == None:
-                await interaction.followup.send(
-                    f"<@{author}> a voté pour <@{personne_votee.id}>. **{personne_votee.nvote}** vote(s)")
-            elif self.player.role == "Voyante":
-                await interaction.followup.send(f"Vous avez décidé d'espionner **{personne_votee.name}**.")
-            elif self.player.role == "Loup Garou":
-                await interaction.followup.send(f"<@{author}> veut dévorer **{personne_votee.name}**. **{personne_votee.nvote}** vote(s)")
-            elif self.player.role == "Sorciere":
-                await interaction.followup.send(f"Vous avez décidé de tuer **{personne_votee.name}**.")
+            await interaction.followup.send(f"Vous avez décidé que **{personne_votee.name}** sera en couple.")
+
 
         elif interaction.response.is_done() == False:
             if choice == f"{personne_votee.name}" and personne_votee.previous_vote == None:
                 author = interaction.user.id
                 voteur.previous_vote = personne_votee
                 personne_votee.nvote += 1
-                if self.player.role == None:
-                    await interaction.response.send_message( f"<@{author}> a voté pour <@{personne_votee.id}>. **{personne_votee.nvote}** vote(s)", ephemeral=False)
-                elif self.player.role == "Voyante":
-                    await interaction.response.send_message(f"Vous avez décidé d'espionner **{personne_votee.name}**.", ephemeral=False)
-                elif self.player.role == "Loup Garou":
-                    await interaction.response.send_message(f"<@{author}> veut dévorer **{personne_votee.name}**. **{personne_votee.nvote}** vote(s)", ephemeral=False)
-                elif self.player.role == "Sorciere":
-                    await interaction.response.send_message(f"Vous avez décidé de tuer **{personne_votee.name}**.", ephemeral=False)
+                await interaction.response.send(f"Vous avez décidé que **{personne_votee.name}** sera en couple.")
+
         else:
             if choice == f"{personne_votee.name}" and personne_votee.previous_vote == None:
                 author = interaction.user.id
                 voteur.previous_vote = personne_votee
                 personne_votee.nvote += 1
-                if self.player == None:
-                    await interaction.followup.send(f"<@{author}> a voté pour <@{personne_votee.id}>. **{personne_votee.nvote}** vote(s)")
-                elif self.player.role == "Voyante":
-                    await interaction.followup.send(f"Vous avez décidé d'espionner **{personne_votee.name}**.")
-                elif self.player.role == "Loup Garou":
-                    await interaction.followup.send(f"<@{author}> veut dévorer **{personne_votee.name}**. **{personne_votee.nvote}** vote(s)")
-                elif self.player.role == "Sorciere":
-                    await interaction.followup.send(f"Vous avez décidé de tuer **{personne_votee.name}**.")
+                await interaction.followup.send(f"Vous avez décidé que **{personne_votee.name}** sera en couple.")
 
 class SelectView(discord.ui.View):
     """permet d'afficher le menu deroulant"""
@@ -78,5 +55,4 @@ async def user_to_player(user, players: list):
 def str_to_class(classname):
     print(getattr(sys.modules[__name__], classname)())
     return getattr(sys.modules[__name__], classname)
-
 
