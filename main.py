@@ -359,7 +359,7 @@ async def start(context):
     context = bot.get_channel(main_thread) #changement de context: channel -> thread
     players = await role_assign(context, n_players, vc) #liste de joueur de type class Player
 
-    
+    dico_players = dico_vote(context, players)
 
     cupidon, voyante, lgs, pf, sorciere = None, None, [], None, None
     for player in players:
