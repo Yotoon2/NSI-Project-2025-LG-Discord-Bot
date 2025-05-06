@@ -35,8 +35,9 @@ async def menu(context, players: list, text: str, player=None): #Select est la c
 async def cupi_menu(context, players: list, dico, text: str):
     """fonction pour menu deroulant du cupi"""
     print("appelle menu cupi")
-    menu_couple = await context.send(content=text, view=SelectViewCupi(players=players, dico=dico))
-    return menu_couple
+    menu_cupi = SelectViewCupi(players=players, dico=dico)
+    message_menu = await context.send(content=text, view=menu_cupi)
+    return message_menu, menu_cupi
 
 
 async def user_to_player(user, players: list):
@@ -118,12 +119,14 @@ async def action_cupidon(context, cupi_chat, cupidon, players: list, dico: dict,
     else:
         await context.send("C'est au tour du **Cupidon**")
         print('cupi')
-        love_menu = await cupi_menu(cupi_chat, players, dico, text="Choisissez les deux joueurs qui deviendront les membres du couple. Si vous ne choisissez pas, il sera choisi aléatoirement.")
+        message_menu, affichage_menu = await cupi_menu(cupi_chat, players, dico,
+                                            text="Choisissez les deux joueurs qui deviendront les membres du couple. Si vous ne choisissez pas, il sera choisi aléatoirement.")
         await cupi_chat.edit(locked=False)
         await context.channel.set_permissions(cupidon.member, send_messages_in_threads=False)
         cupi_timer = Timer(cupi_chat, 15, n_nuits)
         await cupi_timer.role_timer()
-        await love_menu.delete()
+        await message_menu.delete()
+        return affichage_menu.couple
 
 async def assigne_couple(context, players: list, couple: list):
     nb_couple = len(couple)
@@ -273,6 +276,12 @@ async def cible_vote(context, players, voteur):
         if players[i].nvote == maxi:
             counter += 1
             cible.append(players[i])
+
+    #if voteur == "Cupidon":
+    #    await context.send(content="Votre choix à bien été pris en compte.")
+    #    print("Déjà ça a marché c'est pas trop mal")
+    #    return cible  #liste des deux personnes en couple
+
     if maxi == 0: #aucun vote
         if voteur == None:
             await context.send(content=f"Le village a décidé de ne pas voter.")
@@ -308,10 +317,6 @@ async def cible_vote(context, players, voteur):
             await context.send(content=f"Vous n'avez choisi qu'une personne (**{cible[0].name}**), la seconde sera choisi aléatoirement")
             return cible[0] #une des deux personnes du couple
 
-    elif counter == 2: #2 personnes en majorité (cupidon) votées
-        if voteur == "Cupidon":
-            await context.send(content="Votre choix à bien été pris en compte.")
-            return cible #liste des deux personnes en couple
 
     else: #égalité
         if voteur == None:
@@ -431,14 +436,15 @@ async def start(context):
         await context.typing() #event qui va déclencher le timer de nuit
         await asyncio.sleep(1)
 
-        await action_cupidon(channel, cupi_chat, cupidon, players, dico_players, n_nuits)
+        select_love = await action_cupidon(channel, cupi_chat, cupidon, players, dico_players, n_nuits) #
         await cupi_chat.edit(locked=True)
-        cibles_cupi = await cible_vote(context, players, cupidon)
+        #cibles_cupi = await cible_vote(context, players, cupidon)
         await reset_votes(context, players)
-        couple = await assigne_couple(context, players, cibles_cupi)
-        print(couple_chat, couple)
+        #couple = await assigne_couple(context, players, cibles_cupi)
+        #print(couple_chat, couple)
         for i in range(2):
-            await call(couple_chat, couple[i])
+            print(select_love.couple)
+            await call(couple_chat, select_love.couple[i])
 
         await action_voyante(context, vovo_chat, voyante, players, n_nuits) #vovo choisis cible
         await vovo_chat.edit(locked=True) #lock le chat de la vovo
