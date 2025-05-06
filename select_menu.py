@@ -1,6 +1,4 @@
 import discord
-import sys
-from ast import literal_eval
 
 class SelectVote(discord.ui.Select):
     """menu deroulant (25 options max)"""

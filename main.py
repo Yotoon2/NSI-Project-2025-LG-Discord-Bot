@@ -5,6 +5,7 @@ import random
 from ast import literal_eval
 from timer import Timer
 from select_menu import SelectView, SelectVote
+from cupi_select import SelectViewCupi, SelectLove
 from player import Player
 from button_menu import ButtonMenu
 
@@ -31,8 +32,12 @@ async def menu(context, players: list, text: str, player=None): #Select est la c
     vote_menu = await context.send(content=text, view=SelectView(players=players, player=player))
     return vote_menu
 
-async def cupi_menu(context, players: list, text: str):
+async def cupi_menu(context, players: list, dico, text: str):
     """fonction pour menu deroulant du cupi"""
+    print("appelle menu cupi")
+    menu_couple = await context.send(content=text, view=SelectViewCupi(players=players, dico=dico))
+    return menu_couple
+
 
 async def user_to_player(user, players: list):
     for player in players:
@@ -104,7 +109,7 @@ async def reset_votes(context, players: list):
     for player in players:
         player.nvote = 0
 
-async def action_cupidon(cupi_chat, cupidon): #a terminer
+async def action_cupidon(context, cupi_chat, cupidon, players: list, dico: dict, n_nuits): #a terminer
     """a terminer"""
     if cupidon == None:
         print("Il n'y a pas de cupidon dans la partie")
@@ -113,14 +118,19 @@ async def action_cupidon(cupi_chat, cupidon): #a terminer
     else:
         await context.send("C'est au tour du **Cupidon**")
         print('cupi')
-        love_menu = await cupi_menu(context, players, text="Choisissez les deux joueurs qui deviendront les membres du couple. Si vous ne choisissez pas, il sera choisi aléatoirement.")
+        love_menu = await cupi_menu(cupi_chat, players, dico, text="Choisissez les deux joueurs qui deviendront les membres du couple. Si vous ne choisissez pas, il sera choisi aléatoirement.")
+        await cupi_chat.edit(locked=False)
+        await context.channel.set_permissions(cupidon.member, send_messages_in_threads=False)
+        cupi_timer = Timer(cupi_chat, 15, n_nuits)
+        await cupi_timer.role_timer()
+        await love_menu.delete()
 
-async def assigne_couple(context, players, couple: list):
+async def assigne_couple(context, players: list, couple: list):
     nb_couple = len(couple)
     if nb_couple == 2:
         for lover in couple:
             lover.amour == True
-    if nb_couple == 1:
+    elif nb_couple == 1:
         couple[0].amour == True
         while len(couple) != 2:
             lover2 = random.choice(players)
@@ -355,11 +365,13 @@ async def start(context):
     lg_thread = await thread(context, "Loups-Garous")  # créé thread privé des loups
     pf_thread = await thread(context, "Petite Fille") #créé thread privé de la PF
     soso_thread = await thread(context, "Sorcière")  # créé thread privé de la sorciere
+    couple_thread = await thread(context, "Couple")
 
+    channel = context
     context = bot.get_channel(main_thread) #changement de context: channel -> thread
     players = await role_assign(context, n_players, vc) #liste de joueur de type class Player
 
-    dico_players = dico_vote(context, players)
+    dico_players = await dico_vote(context, players)
 
     cupidon, voyante, lgs, pf, sorciere = None, None, [], None, None
     for player in players:
@@ -381,6 +393,7 @@ async def start(context):
     lg_chat = bot.get_channel(lg_thread) #thread id (loups) -> channel (loups)
     pf_chat = bot.get_channel(pf_thread) #thread id (PF) -> channel (PF)
     soso_chat = bot.get_channel(soso_thread) #thread id (sorciere) -> channel (sorciere)
+    couple_chat = bot.get_channel(couple_thread)
     role_chats = [cupi_chat, vovo_chat, lg_chat, pf_chat, soso_chat]
     await lock(role_chats) #lock tous les chats sauf le main
 
@@ -391,8 +404,8 @@ async def start(context):
     await start.start_timer() # compteur de départ
 
     dead_ppl = []
-    #potion_vie = 1
-    #potion_mort = 1
+    potion_vie = 1
+    potion_mort = 1
     potion_vie = True
     potion_mort = True
     n_jours = 1
@@ -400,59 +413,11 @@ async def start(context):
     temps_discussion = 12
     await asyncio.sleep(1)
 
-
-
-
-
-
-
-
-    tdiscu = Timer(context, temps_discussion-10, n_jours)
-    await tdiscu.discussion()
-    # await discussion(context, 1, n_jours)
-    n_jours += 1
-    await asyncio.sleep(1)
-    await context.edit(locked=True) #lock le chat du village pour la nuit
-
-    await asyncio.sleep(1)
-    await context.typing() #event qui va déclencher le timer de nuit
-    await asyncio.sleep(1)
-
-    await action_cupidon()
-    cibles_cupi = await cible_vote(context, players, cupidon)
-    await reset_votes(context, players)
-    await cupi_chat
-
-    await action_voyante(context, vovo_chat, voyante, players, n_nuits) #vovo choisis cible
-    cible_vovo = await cible_vote(vovo_chat, players, voyante) #cible est récup ici (type class player)
-    await reset_votes(context, players) #vote reset
-    await vovo_chat.edit(locked=True) #lock le chat de la vovo
-
-    await action_lg(context, lg_chat, lgs, players, n_nuits) #lgs choisissent cible
-    cible_lg = await cible_vote(lg_chat, players, lgs)
-    await reset_votes(context, players) #vote reset
-    await lg_chat.edit(locked=True) #lock chat des lgs
-
-    await action_sorciere(context=context, soso_chat=soso_chat, sorciere=sorciere, players=players, n_nuits=n_nuits,
-                          potion_vie=potion_vie, potion_mort=potion_mort, cible_lg=cible_lg)
-    cible_soso = await cible_vote(soso_chat, players, sorciere)
-    await annonce_jour(context, cible_lg, cible_soso)
-    await soso_chat.edit(locked=True)
-    if cible_vovo is not None:
-        await vovo_chat.send(f"La personne que vous avez espionné est **{cible_vovo.role}**.")
-    n_nuits += 1
-
-
-
-
-
-
     game_state = True  # True = le jeu est en cours, False = le jeu est fini
     while game_state == True: #boucle du jeu
 
         tdiscu = Timer(context, temps_discussion-10, n_jours)
         await tdiscu.discussion()
-        # await discussion(context, 1, n_jours)
         n_jours += 1
         await asyncio.sleep(1)
         vote = Timer(context, 1, n_jours=0)
@@ -466,15 +431,24 @@ async def start(context):
         await context.typing() #event qui va déclencher le timer de nuit
         await asyncio.sleep(1)
 
+        await action_cupidon(channel, cupi_chat, cupidon, players, dico_players, n_nuits)
+        await cupi_chat.edit(locked=True)
+        cibles_cupi = await cible_vote(context, players, cupidon)
+        await reset_votes(context, players)
+        couple = await assigne_couple(context, players, cibles_cupi)
+        print(couple_chat, couple)
+        for i in range(2):
+            await call(couple_chat, couple[i])
+
         await action_voyante(context, vovo_chat, voyante, players, n_nuits) #vovo choisis cible
+        await vovo_chat.edit(locked=True) #lock le chat de la vovo
         cible_vovo = await cible_vote(vovo_chat, players, voyante) #cible est récup ici (type class player)
         await reset_votes(context, players) #vote reset
-        await vovo_chat.edit(locked=True) #lock le chat de la vovo
 
         await action_lg(context, lg_chat, lgs, players, n_nuits) #lgs choisissent cible
+        await lg_chat.edit(locked=True) #lock chat des lgs
         cible_lg = await cible_vote(lg_chat, players, lgs)
         await reset_votes(context, players) #vote reset
-        await lg_chat.edit(locked=True) #lock chat des lgs
 
         cible_lg = await action_sorciere(context=context, soso_chat=soso_chat, sorciere=sorciere, players=players, n_nuits=n_nuits,
                                            potion_vie=potion_vie, potion_mort=potion_mort, cible_lg=cible_lg)
@@ -516,7 +490,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-
-
-
-
