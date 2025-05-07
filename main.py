@@ -120,7 +120,9 @@ async def action_cupidon(context, cupi_chat, cupidon, players: list, dico: dict,
     elif cupidon.state == False:
         print("Le cupidon est mort")
     else:
-        await context.send("C'est au tour du **Cupidon**")
+        #await context.send("C'est au tour du **Cupidon**")
+        cupi_channel = bot.get_channel(threads.get('cupidon_thread'))
+        await cupi_channel.send(f"**C'est au tour du Cupidon**")
         print('cupi')
         message_menu, affichage_menu = await cupi_menu(cupi_chat, players, dico,
                                             text="Choisissez les deux joueurs qui deviendront les membres du couple. Si vous ne choisissez pas, il sera choisi aléatoirement.")
@@ -523,8 +525,9 @@ async def on_typing(context, user, when): #night timer
 @bot.command(aliases=["ct", "cleart", "clear"])
 async def clear_threads(context):
     print("Clearing Threads...")
-    threads = context.channel.threads
-    for thread in threads:
+    l_threads = context.channel.threads
+    threads = {}
+    for thread in l_threads:
         await thread.delete()
     print("Cleared.")
 
