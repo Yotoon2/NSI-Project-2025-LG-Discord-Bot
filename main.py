@@ -14,7 +14,7 @@ token = 'MTM1OTUxODk0OTA0MTExNTMyMA.GWVATN.B_qihYlFhcYWxI0NMrTVE-sI7-eDvQEKZgz6n
 intents = discord.Intents.all()
 bot = commands.Bot(command_prefix='!', intents=intents)
 
-
+threads = {}
 
 # @bot.command() # Create a slash command
 async def button(context, potion_vie, cible_lg):
@@ -74,6 +74,7 @@ async def get_compo(context, nb_players: int):
     #     raise IndexError("6 <= int <= 12")
     with open(f"compo{nb_players}.txt", "r") as f:
         return literal_eval(f.read())
+
 async def role_assign(context, nb_players, members: literal_eval):
     """Assigne un role au hasard pour chaque joueur de la partie"""
     liste = []
@@ -105,6 +106,7 @@ async def thread(context, name: str):
     channel = context.channel
     thread = await channel.create_thread(name=f"{name}", auto_archive_duration=60)
     await thread.edit(invitable=False)
+    threads[f'{name.lower()}_thread'] = thread.id  # Stocker l'ID du thread dans le dictionnaire
     return thread.id
 
 async def reset_votes(context, players: list):
@@ -342,6 +344,8 @@ async def start(context):
     soso_thread = await thread(context, "Sorcière")  # créé thread privé de la sorciere
     couple_thread = await thread(context, "Couple")
 
+    print(threads)
+
     channel = context
     context = bot.get_channel(main_thread) #changement de context: channel -> thread
     players = await role_assign(context, n_players, vc) #liste de joueur de type class Player
@@ -532,11 +536,24 @@ async def mute(ctx, member: discord.Member):
         embed=discord.Embed(title="Permission Denied.", description="You don't have permission to use this command.", color=0xff00f6)
         await ctx.send(embed=embed)
 
-#@bot.event
-#async def on_message(message: discord.Message):
-#    if message.author.bot:
-#        pass
-#    else: await message.channel.send('ntm la pute')
+@bot.event
+async def on_message(message):
+    if message.author.bot:
+        return
+
+    # Vérifiez si le message est une commande
+    if message.content.startswith('!'):
+        await bot.process_commands(message)
+        return
+
+    # Vérifiez si le message provient du thread "lg"
+    if message.channel.id == threads['loups-garous_thread']:
+        # Retransmettre le message dans le thread "pf"
+        pf_channel = bot.get_channel(threads.get('petite fille_thread'))
+        print(pf_channel)
+        if pf_channel:
+            await pf_channel.send(f"Message de {message.author.name}: {message.content}")
+
 
 @bot.event
 async def on_ready():
