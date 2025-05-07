@@ -15,6 +15,7 @@ intents = discord.Intents.all()
 bot = commands.Bot(command_prefix='!', intents=intents)
 
 
+
 # @bot.command() # Create a slash command
 async def button(context, potion_vie, cible_lg):
     print('button')
@@ -221,8 +222,6 @@ def maxi_vote(players: list):
         if player.nvote > maxi:
             maxi = player.nvote
     return maxi
-
-
 
 
 async def cible_vote(context, players, voteur):
