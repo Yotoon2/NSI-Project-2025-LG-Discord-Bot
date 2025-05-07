@@ -122,36 +122,11 @@ async def action_cupidon(context, cupi_chat, cupidon, players: list, dico: dict,
         message_menu, affichage_menu = await cupi_menu(cupi_chat, players, dico,
                                             text="Choisissez les deux joueurs qui deviendront les membres du couple. Si vous ne choisissez pas, il sera choisi aléatoirement.")
         await cupi_chat.edit(locked=False)
-        await context.channel.set_permissions(cupidon.member, send_messages_in_threads=False)
+        #await context.channel.set_permissions(cupidon.member, send_messages_in_threads=False)
         cupi_timer = Timer(cupi_chat, 15, n_nuits)
         await cupi_timer.role_timer()
         await message_menu.delete()
-        return affichage_menu.couple
-
-async def assigne_couple(context, players: list, couple: list):
-    nb_couple = len(couple)
-    if nb_couple == 2:
-        for lover in couple:
-            lover.amour == True
-    elif nb_couple == 1:
-        couple[0].amour == True
-        while len(couple) != 2:
-            lover2 = random.choice(players)
-            if couple[0] == lover2:
-                continue
-            else:
-                couple.append(lover2)
-                return couple
-    else:
-        while len(couple) != 2:
-            lover1 = random.choice(players)
-            lover2 = random.choice(players)
-            if lover1 == lover2:
-                continue
-            else:
-                couple = [lover1, lover2]
-                return couple
-
+        return affichage_menu.selectlove
 
 async def action_voyante(context, vovo_chat, voyante, players, n_nuits):
     if voyante == None:
@@ -163,7 +138,7 @@ async def action_voyante(context, vovo_chat, voyante, players, n_nuits):
         print("vovo")
         bdc = await menu(vovo_chat, players,"Choisissez la personne dont vous voulez révéler le rôle.", voyante)
         await vovo_chat.edit(locked=False)
-        await context.channel.set_permissions(voyante.member, send_messages_in_threads=False)
+        #await context.channel.set_permissions(voyante.member, send_messages_in_threads=False)
         vovo_timer = Timer(vovo_chat, 15, n_nuits)
         await vovo_timer.role_timer()
         await bdc.delete()
@@ -185,7 +160,6 @@ async def action_lg(context, lg_chat, lgs, players, n_nuits):
         await kill_menu.delete()
 
 async def action_sorciere(context, soso_chat, sorciere, players, n_nuits, potion_vie, potion_mort, cible_lg):
-    liste = []
     pdv_menu = None
     if sorciere == None:
         print("Il n'y a pas de sorcière dans la partie")
@@ -198,10 +172,6 @@ async def action_sorciere(context, soso_chat, sorciere, players, n_nuits, potion
             await soso_chat.send(f"Aucune personne n'a été ciblé ce soir.")
             print("pas de cible lg")
         else:
-        #    if potion_vie == 0: # potion vie deja utilisé
-        #        print("plus de potion de vie")
-        #        pdv_menu = None
-        #        await soso_chat.send(content=f"Vous avez déjà utilisé la potion de vie.")
             if potion_vie == False:  # potion vie deja utilisé
                 print("plus de potion de vie")
                 pdv_menu = None
@@ -211,10 +181,6 @@ async def action_sorciere(context, soso_chat, sorciere, players, n_nuits, potion
                 pdv_menu = await button(context=soso_chat, potion_vie=potion_vie, cible_lg=cible_lg)
                 print(pdv_menu.cible_lg)
 
-        #if potion_mort == 0: #potion mort deja utilisé
-        #    print("plus de potion de mort")
-        #    pdm_menu = 0
-        #    await soso_chat.send(content=f"Vous avez déjà utilisé la potion de mort.")
         if potion_mort == False: #potion mort deja utilisé
             print("plus de potion de mort")
             pdm_menu = 0
@@ -227,8 +193,9 @@ async def action_sorciere(context, soso_chat, sorciere, players, n_nuits, potion
             # await context.channel.set_permissions(sorciere.member, send_messages_in_threads=False)
             soso_timer = Timer(soso_chat, 5, n_nuits)
             await soso_timer.role_timer()
-    print(f'cible lg : {pdv_menu.cible_lg}')
+            print(f'cible lg : {pdv_menu.cible_lg}')
     return pdv_menu.cible_lg
+
 
 
 async def dico_vote(context, players):
@@ -236,15 +203,6 @@ async def dico_vote(context, players):
     for player in players:
         dico[player.name] = player
     return dico
-
-
-
-
-
-
-
-
-
 
 
 
@@ -277,10 +235,6 @@ async def cible_vote(context, players, voteur):
             counter += 1
             cible.append(players[i])
 
-    #if voteur == "Cupidon":
-    #    await context.send(content="Votre choix à bien été pris en compte.")
-    #    print("Déjà ça a marché c'est pas trop mal")
-    #    return cible  #liste des deux personnes en couple
 
     if maxi == 0: #aucun vote
         if voteur == None:
@@ -341,7 +295,15 @@ async def lock(role_chats):
     for role_chat in role_chats:
         await role_chat.edit(locked=True)
 
-async def annonce_jour(context, cible_lg, cible_soso):
+
+async def ping_couple(couple_chat, select_love):
+    for i in range(2):
+        print(select_love.couple)
+        await call(couple_chat, select_love.couple[i])
+    await couple_chat.send(content=f"Le **Cupidon**, vous a choisi pour son **Couple**, vous avez accès à ce chat privé afin de communiquer jour comme nuit.")
+
+
+async def annonce_jour(context, cible_lg, cible_soso=None):
     if cible_lg is not None:
         cible_lg.state = False
         await context.send(content=f"<@{cible_lg.id}> s'est fait dévoré(e) par les loups cette nuit.")
@@ -436,15 +398,9 @@ async def start(context):
         await context.typing() #event qui va déclencher le timer de nuit
         await asyncio.sleep(1)
 
-        select_love = await action_cupidon(channel, cupi_chat, cupidon, players, dico_players, n_nuits) #
+        select_love = await action_cupidon(channel, cupi_chat, cupidon, players, dico_players, n_nuits) #renvoie selectviewcupi
         await cupi_chat.edit(locked=True)
-        #cibles_cupi = await cible_vote(context, players, cupidon)
-        await reset_votes(context, players)
-        #couple = await assigne_couple(context, players, cibles_cupi)
-        #print(couple_chat, couple)
-        for i in range(2):
-            print(select_love.couple)
-            await call(couple_chat, select_love.couple[i])
+        await ping_couple(couple_chat, select_love)
 
         await action_voyante(context, vovo_chat, voyante, players, n_nuits) #vovo choisis cible
         await vovo_chat.edit(locked=True) #lock le chat de la vovo
@@ -456,11 +412,12 @@ async def start(context):
         cible_lg = await cible_vote(lg_chat, players, lgs)
         await reset_votes(context, players) #vote reset
 
-        cible_lg = await action_sorciere(context=context, soso_chat=soso_chat, sorciere=sorciere, players=players, n_nuits=n_nuits,
+        if sorciere is not None:
+            cible_lg = await action_sorciere(context=context, soso_chat=soso_chat, sorciere=sorciere, players=players, n_nuits=n_nuits,
                                            potion_vie=potion_vie, potion_mort=potion_mort, cible_lg=cible_lg)
         cible_soso = await cible_vote(soso_chat, players, sorciere)
-        await annonce_jour(context, cible_lg, cible_soso)
         await soso_chat.edit(locked=True)
+        await annonce_jour(context, cible_lg, cible_soso)
         if cible_vovo is not None:
             await vovo_chat.send(f"La personne que vous avez espionné est **{cible_vovo.role}**.")
         n_nuits += 1

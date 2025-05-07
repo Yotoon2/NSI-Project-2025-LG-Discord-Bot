@@ -24,26 +24,16 @@ class SelectLove(discord.ui.Select):
 
     async def sys_vote(self, interaction, choice, personne_votee, voteur):
         if choice == f"{personne_votee.name}" and voteur.previous_vote != None:
-            author = interaction.user.id
-            voteur.previous_vote.nvote -= 1
-            voteur.previous_vote = personne_votee
-            personne_votee.nvote += 1
             await interaction.followup.send(f"Vous avez décidé que **{personne_votee.name}** et **{self.values[1]}** seront en couple.")
-            self.couple = [personne_votee, self.values[1]]
+            self.couple = [personne_votee, self.dico[self.values[1]]]
 
         elif interaction.response.is_done() == False:
             if choice == f"{personne_votee.name}" and personne_votee.previous_vote == None:
-                author = interaction.user.id
-                voteur.previous_vote = personne_votee
-                personne_votee.nvote += 1
                 await interaction.response.send(f"Vous avez décidé que **{personne_votee.name}** et **{self.values[1]}** seront en couple.")
                 self.couple = [personne_votee, self.dico[self.values[1]]]
 
         else:
             if choice == f"{personne_votee.name}" and personne_votee.previous_vote == None:
-                author = interaction.user.id
-                voteur.previous_vote = personne_votee
-                personne_votee.nvote += 1
                 await interaction.followup.send(f"Vous avez décidé que **{personne_votee.name}** et **{self.values[1]}** seront en couple.")
                 self.couple = [personne_votee, self.dico[self.values[1]]]
 
@@ -52,10 +42,9 @@ class SelectViewCupi(discord.ui.View):
     print("select view")
     def __init__(self, players: list, dico: dict, *, timeout = 180): #Select est la classe a afficher
         super().__init__(timeout=timeout)
-        self.couple = SelectLove(players, dico)
-        print('prob 1 :', self.couple)
-        print('prob 2 :', self.couple.couple)
-        self.add_item(self.couple)
+        self.selectlove = SelectLove(players, dico)
+        self.add_item(self.selectlove)
+
 
 
 async def user_to_player(user, players: list):
