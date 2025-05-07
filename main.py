@@ -302,18 +302,27 @@ async def ping_couple(couple_chat, select_love):
     await couple_chat.send(content=f"Le **Cupidon**, vous a choisi pour son **Couple**, vous avez accès à ce chat privé afin de communiquer jour comme nuit.")
 
 
-async def annonce_jour(context, cible_lg, cible_soso=None):
-    if cible_lg is not None:
+async def annonce_jour(context, cible_lg=None, cible_soso=None):
+    morts = []
+    if cible_lg is not None: #cible lg existe
         cible_lg.state = False
+        morts.append(cible_lg)
         await context.send(content=f"<@{cible_lg.id}> s'est fait dévoré(e) par les loups cette nuit.")
         await asyncio.sleep(2)
         await context.send(content=f"Il était **{cible_lg.role}**")
-    if cible_soso is not None:
+    if cible_soso is not None: #cible soso existe
+        cible_soso.state = False
+        morts.append(cible_soso)
         await context.send(content=f"<@{cible_soso.id}> s'est fait tué(e) par la sorcière cette nuit.")
         await asyncio.sleep(2)
         await context.send(content=f"Il était **{cible_soso.role}**")
-    elif cible_lg is None and cible_soso is None:
+    if morts == []: #cas où personne n'a été ciblé
         await context.send(content=f"Personne n'est mort cette nuit.")
+    else: #cas où au moins une personne a été ciblée
+        for mort in morts:
+            mort.member.edit(mute=True)
+
+
 
 
 @bot.command()
@@ -379,50 +388,119 @@ async def start(context):
     temps_discussion = 12
     await asyncio.sleep(1)
 
-    game_state = True  # True = le jeu est en cours, False = le jeu est fini
-    while game_state == True: #boucle du jeu
+    #PREMIER ROUND
 
+    #DISCUSSION
+    tdiscu = Timer(context, temps_discussion-10, n_jours)
+    await tdiscu.discussion()
+    n_jours += 1
+    await asyncio.sleep(1)
+
+    #CUPIDON
+    select_love = await action_cupidon(channel, cupi_chat, cupidon, players, dico_players, n_nuits) #renvoie l'objet de la class selectviewcupi
+    await cupi_chat.edit(locked=True)
+    await ping_couple(couple_chat, select_love)
+
+    #NUIT
+    await context.edit(locked=True) #lock le chat du village pour la nuit
+    await asyncio.sleep(1)
+    await context.typing() #event qui va déclencher le timer de nuit
+    await asyncio.sleep(1)
+
+    #VOYANTE
+    await action_voyante(context, vovo_chat, voyante, players, n_nuits) #vovo choisis cible
+    await vovo_chat.edit(locked=True) #lock le chat de la vovo
+    cible_vovo = await cible_vote(vovo_chat, players, voyante) #cible est récup ici (type class player)
+    await reset_votes(context, players) #vote reset
+
+    #LOUP GAROU
+    await action_lg(context, lg_chat, lgs, players, n_nuits) #lgs choisissent cible
+    await lg_chat.edit(locked=True) #lock chat des lgs
+    cible_lg = await cible_vote(lg_chat, players, lgs)
+    await reset_votes(context, players) #vote reset
+
+    #SORCIERE
+    if sorciere is not None:
+        cible_lg = await action_sorciere(context=context, soso_chat=soso_chat, sorciere=sorciere, players=players, n_nuits=n_nuits,
+                                         potion_vie=potion_vie, potion_mort=potion_mort, cible_lg=cible_lg)
+    cible_soso = await cible_vote(soso_chat, players, sorciere)
+    await soso_chat.edit(locked=True)
+
+    #ANNONCE DES MORTS
+    await annonce_jour(context, cible_lg, cible_soso)
+    if cible_vovo is not None:
+        await vovo_chat.send(f"La personne que vous avez espionné est **{cible_vovo.role}**.")
+
+    game_state = True  # True = le jeu est en cours, False = le jeu est fini
+    #BOUCLE DE JEU
+    while game_state == True:
+
+        #DISCUSSION
         tdiscu = Timer(context, temps_discussion-10, n_jours)
         await tdiscu.discussion()
         n_jours += 1
         await asyncio.sleep(1)
+
+        #VOTE
         vote = Timer(context, 1, n_jours=0)
         await vote.vote_village(players=players) #commence le vote du village
         await asyncio.sleep(1)
         await cible_vote(context, players, None) #annonce les résultats et la mort de la personne voté
         await reset_votes(context, players) #remet les compteurs de vote a 0
-        await context.edit(locked=True) #lock le chat du village pour la nuit
 
+        #NUIT
+        await context.edit(locked=True) #lock le chat du village pour la nuit
         await asyncio.sleep(1)
         await context.typing() #event qui va déclencher le timer de nuit
         await asyncio.sleep(1)
 
-        select_love = await action_cupidon(channel, cupi_chat, cupidon, players, dico_players, n_nuits) #renvoie selectviewcupi
-        await cupi_chat.edit(locked=True)
-        await ping_couple(couple_chat, select_love)
-
+        #VOYANTE
         await action_voyante(context, vovo_chat, voyante, players, n_nuits) #vovo choisis cible
         await vovo_chat.edit(locked=True) #lock le chat de la vovo
         cible_vovo = await cible_vote(vovo_chat, players, voyante) #cible est récup ici (type class player)
         await reset_votes(context, players) #vote reset
 
+        #LOUP GAROU
         await action_lg(context, lg_chat, lgs, players, n_nuits) #lgs choisissent cible
         await lg_chat.edit(locked=True) #lock chat des lgs
         cible_lg = await cible_vote(lg_chat, players, lgs)
         await reset_votes(context, players) #vote reset
 
+        #SORCIERE
         if sorciere is not None:
             cible_lg = await action_sorciere(context=context, soso_chat=soso_chat, sorciere=sorciere, players=players, n_nuits=n_nuits,
                                            potion_vie=potion_vie, potion_mort=potion_mort, cible_lg=cible_lg)
         cible_soso = await cible_vote(soso_chat, players, sorciere)
         await soso_chat.edit(locked=True)
+
+        #ANNONCE DES MORTS
         await annonce_jour(context, cible_lg, cible_soso)
         if cible_vovo is not None:
             await vovo_chat.send(f"La personne que vous avez espionné est **{cible_vovo.role}**.")
+
         n_nuits += 1
-        game_state = False
+
+        game_state = is_game_over(context, players, lgs)
     await context.send("Le jeu est terminé !")
     print("Program has ended without errors.")
+
+async def is_game_over(context, players, lgs):
+    lgs_vivants = 0
+    players_vivants = 0
+    for lg in lgs:
+        if lg.state == True:
+            lgs_vivants += 1
+    for player in players:
+        if player.state == True:
+            players_vivants += 1
+
+    if players_vivants - lgs_vivants == lgs_vivants:
+        await context.send("La partie est terminée!")
+        await context.send("Les Loups-Garous ont gagné!")
+
+
+
+
 
 @bot.event
 async def on_typing(context, user, when): #night timer
@@ -438,6 +516,27 @@ async def clear_threads(context):
     for thread in threads:
         await thread.delete()
     print("Cleared.")
+
+@bot.command()
+async def mut(context, member: discord.Member):
+    await member.edit(mute=True)
+
+@bot.command(pass_context = True)
+async def mute(ctx, member: discord.Member):
+    if ctx.message.author.server_permissions.administrator:
+        role = discord.utils.get(member.server.roles, name='Muted')
+        await ctx.add_roles(member, role)
+        embed=discord.Embed(title="User Muted!", description="**{0}** was muted by **{1}**!".format(member, ctx.message.author), color=0xff00f6)
+        await ctx.send(embed=embed)
+    else:
+        embed=discord.Embed(title="Permission Denied.", description="You don't have permission to use this command.", color=0xff00f6)
+        await ctx.send(embed=embed)
+
+#@bot.event
+#async def on_message(message: discord.Message):
+#    if message.author.bot:
+#        pass
+#    else: await message.channel.send('ntm la pute')
 
 @bot.event
 async def on_ready():
