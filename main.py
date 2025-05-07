@@ -485,7 +485,6 @@ async def start(context):
         n_nuits += 1
 
         game_state = is_game_over(context, players, lgs)
-    await context.send("Le jeu est terminé !")
     print("Program has ended without errors.")
 
 async def is_game_over(context, players, lgs):
@@ -501,7 +500,15 @@ async def is_game_over(context, players, lgs):
     if players_vivants - lgs_vivants == lgs_vivants:
         await context.send("La partie est terminée!")
         await context.send("Les Loups-Garous ont gagné!")
+        return False
 
+    elif lgs_vivants == 0:
+        await context.send("La partie est terminée!")
+        await context.send("Les Villageois ont gagné!")
+        return False
+
+    else:
+        return True
 
 
 
