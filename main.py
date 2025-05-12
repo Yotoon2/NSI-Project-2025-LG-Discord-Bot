@@ -24,6 +24,7 @@ async def button(context, potion_vie, cible_lg):
                                     view=bouton_soso) # Send a message with our View class that contains the button
     #print(bouton_soso.button_callback1)
     print(f'fonction bouton : {bouton_soso.cible_lg}, reste :')
+    potion_vie = bouton_soso.potion_vie
     return bouton_soso
     #return potion_vie
 
@@ -198,9 +199,10 @@ async def action_sorciere(context, soso_chat, sorciere, players, n_nuits, potion
             # await context.channel.set_permissions(sorciere.member, send_messages_in_threads=False)
             soso_timer = Timer(soso_chat, 5, n_nuits)
             await soso_timer.role_timer()
-            print(f'cible lg : {pdv_menu.cible_lg}')
-    return pdv_menu.cible_lg
-
+            if pdv_menu is not None:
+                return pdv_menu.cible_lg, pdv_menu.potion_vie
+            else:
+                return cible_lg, False
 
 
 async def dico_vote(context, players):
@@ -300,15 +302,17 @@ async def lock(role_chats):
 
 
 async def ping_couple(couple_chat, select_love):
-    for i in range(2):
-        print(select_love.couple)
-        await call(couple_chat, select_love.couple[i])
-    await couple_chat.send(content=f"Le **Cupidon**, vous a choisi pour son **Couple**, vous avez accès à ce chat privé afin de communiquer jour comme nuit.")
+    if select_love is not None:
+        for i in range(2):
+            print(select_love.couple)
+            await call(couple_chat, select_love.couple[i])
+        await couple_chat.send(content=f"Le **Cupidon**, vous a choisi pour son **Couple**, vous avez accès à ce chat privé afin de communiquer jour comme nuit.")
 
 
 async def annonce_jour(context, cible_lg=None, cible_soso=None):
     morts = []
     if cible_lg is not None: #cible lg existe
+        print(cible_lg)
         cible_lg.state = False
         morts.append(cible_lg)
         await context.send(content=f"<@{cible_lg.id}> s'est fait dévoré(e) par les loups cette nuit.")
@@ -385,8 +389,6 @@ async def start(context):
     await start.start_timer() # compteur de départ
 
     dead_ppl = []
-    potion_vie = 1
-    potion_mort = 1
     potion_vie = True
     potion_mort = True
     n_jours = 1
@@ -427,7 +429,7 @@ async def start(context):
 
     #SORCIERE
     if sorciere is not None:
-        cible_lg = await action_sorciere(context=context, soso_chat=soso_chat, sorciere=sorciere, players=players, n_nuits=n_nuits,
+        cible_lg, potion_vie = await action_sorciere(context=context, soso_chat=soso_chat, sorciere=sorciere, players=players, n_nuits=n_nuits,
                                          potion_vie=potion_vie, potion_mort=potion_mort, cible_lg=cible_lg)
     cible_soso = await cible_vote(soso_chat, players, sorciere)
     await soso_chat.edit(locked=True)
@@ -474,7 +476,7 @@ async def start(context):
 
         #SORCIERE
         if sorciere is not None:
-            cible_lg = await action_sorciere(context=context, soso_chat=soso_chat, sorciere=sorciere, players=players, n_nuits=n_nuits,
+            cible_lg, potion_vie = await action_sorciere(context=context, soso_chat=soso_chat, sorciere=sorciere, players=players, n_nuits=n_nuits,
                                            potion_vie=potion_vie, potion_mort=potion_mort, cible_lg=cible_lg)
         cible_soso = await cible_vote(soso_chat, players, sorciere)
         await soso_chat.edit(locked=True)
@@ -552,7 +554,7 @@ async def on_message(message):
         return
 
     # Vérifiez si le message est une commande
-    if message.content.startswith('!'):
+    if message.content.startswith('!start'):
         await bot.process_commands(message)
         return
 

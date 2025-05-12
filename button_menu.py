@@ -15,8 +15,9 @@ class ButtonMenu(discord.ui.View): # Create a class called MyView that subclasse
             for i in range(len(self.children)):
                 self.children[i].disabled = True
             await interaction.response.edit_message(view=self)
-        await interaction.followup.send(f"Vous avez décidé de ***sauver*** **{self.cible_lg.name}**.") # Send a message when the button is clicked
-        self.cible_lg = None
+            await interaction.followup.send(f"Vous avez décidé de ***sauver*** **{self.cible_lg.name}**.") # Send a message when the button is clicked
+            self.cible_lg = None
+        self.potion_vie = False
 
 
 
