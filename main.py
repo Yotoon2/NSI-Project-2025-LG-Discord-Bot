@@ -113,6 +113,7 @@ async def thread(context, name: str):
 async def reset_votes(context, players: list):
     for player in players:
         player.nvote = 0
+        player.previous_vote = None
 
 async def action_cupidon(context, cupi_chat, cupidon, players: list, dico: dict, n_nuits): #a terminer
     """a terminer"""
@@ -303,9 +304,13 @@ async def lock(role_chats):
 
 async def ping_couple(couple_chat, select_love):
     if select_love is not None:
+        select_love.couple[0].amour = select_love.couple[1]
+        select_love.couple[1].amour = select_love.couple[0]
         for i in range(2):
             print(select_love.couple)
             await call(couple_chat, select_love.couple[i])
+        print(f'Amour 1 : {select_love.couple[0].amour}')
+        print(f'Amour 2 : {select_love.couple[1].amour}')
         await couple_chat.send(content=f"Le **Cupidon**, vous a choisi pour son **Couple**, vous avez accès à ce chat privé afin de communiquer jour comme nuit.")
 
 
@@ -318,17 +323,29 @@ async def annonce_jour(context, cible_lg=None, cible_soso=None):
         await context.send(content=f"<@{cible_lg.id}> s'est fait dévoré(e) par les loups cette nuit.")
         await asyncio.sleep(2)
         await context.send(content=f"Il était **{cible_lg.role}**")
+        if cible_lg.amour is not None:
+            cible_lg.amour.state = False
+            morts.append(cible_lg.amour)
+            await context.send(content=f"<@{cible_lg.amour.id}> est mort par chagrin d'amour")
+            await asyncio.sleep(2)
+            await context.send(content=f"Il était **{cible_lg.amour.role}**")
     if cible_soso is not None: #cible soso existe
         cible_soso.state = False
         morts.append(cible_soso)
         await context.send(content=f"<@{cible_soso.id}> s'est fait tué(e) par la sorcière cette nuit.")
         await asyncio.sleep(2)
         await context.send(content=f"Il était **{cible_soso.role}**")
+        if cible_soso.amour is not None:
+            cible_soso.amour.state = False
+            morts.append(cible_soso.amour)
+            await context.send(content=f"<@{cible_soso.amour} est mort par chagrin d'amour")
+            await asyncio.sleep(2)
+            await context.send(content=f"Il était **{cible_soso.amour.role}**")
     if morts == []: #cas où personne n'a été ciblé
         await context.send(content=f"Personne n'est mort cette nuit.")
     else: #cas où au moins une personne a été ciblée
         for mort in morts:
-            mort.member.edit(mute=True)
+            await mort.member.edit(mute=True)
 
 
 
@@ -355,8 +372,7 @@ async def start(context):
     channel = context
     context = bot.get_channel(main_thread) #changement de context: channel -> thread
     players = await role_assign(context, n_players, vc) #liste de joueur de type class Player
-
-    dico_players = await dico_vote(context, players)
+    dico_players = await dico_joueurs(context, players)
 
     cupidon, voyante, lgs, pf, sorciere = None, None, [], None, None
     for player in players:
@@ -402,6 +418,7 @@ async def start(context):
     tdiscu = Timer(context, temps_discussion-10, n_jours)
     await tdiscu.discussion()
     n_jours += 1
+    n_nuits += 1
     await asyncio.sleep(1)
 
     #CUPIDON
@@ -554,7 +571,7 @@ async def on_message(message):
         return
 
     # Vérifiez si le message est une commande
-    if message.content.startswith('!start'):
+    if message.content.startswith('!start') or message.content.startswith('!ct'):
         await bot.process_commands(message)
         return
 
