@@ -16,6 +16,8 @@ bot = commands.Bot(command_prefix='!', intents=intents)
 
 threads = {}
 
+dico_lg = {}
+
 # @bot.command() # Create a slash command
 async def button(context, potion_vie, cible_lg):
     print('button')
@@ -115,8 +117,7 @@ async def reset_votes(context, players: list):
         player.nvote = 0
         player.previous_vote = None
 
-async def action_cupidon(context, cupi_chat, cupidon, players: list, dico: dict, n_nuits): #a terminer
-    """a terminer"""
+async def action_cupidon(context, cupi_chat, cupidon, players: list, dico: dict, n_nuits):
     if cupidon == None:
         print("Il n'y a pas de cupidon dans la partie")
     elif cupidon.state == False:
@@ -206,7 +207,7 @@ async def action_sorciere(context, soso_chat, sorciere, players, n_nuits, potion
                 return cible_lg, False
 
 
-async def dico_vote(context, players):
+async def dico_joueurs(context, players):
     dico = {}
     for player in players:
         dico[player.name] = player
@@ -240,7 +241,6 @@ async def cible_vote(context, players, voteur):
         if players[i].nvote == maxi:
             counter += 1
             cible.append(players[i])
-
 
     if maxi == 0: #aucun vote
         if voteur == None:
@@ -348,15 +348,20 @@ async def annonce_jour(context, cible_lg=None, cible_soso=None):
         for mort in morts:
             await mort.member.edit(mute=True)
 
-
+async def nom_façade(context, lgs):
+    noms = ["Loup-Garou Gentil", "Loup-Garou Bourré", "Loup-Garou Affamé"]
+    for lg in lgs:
+        nom = random.choice(noms)
+        noms.remove(nom)
+        dico_lg[lg.name] = nom
 
 
 @bot.command()
 async def start(context):
     """Starts the game"""
     print("Starting...")
+    dico_lg = {}
     await clear_threads(context)
-
     vc = await vc_members(context) #liste des personnes présentes dans le voc
     n_players = len(vc) #nombre de joueurs dans la partie
 
@@ -389,6 +394,8 @@ async def start(context):
             sorciere = player
     roles_nuit = [cupidon, voyante, lgs, pf, sorciere]
     await annonce_role(context, players) #annonce des roles par dm
+
+    await nom_façade(context, lgs)
 
     cupi_chat = bot.get_channel(cupi_thread) #thread id (cupidon) -> channel (cupidon)
     vovo_chat = bot.get_channel(vovo_thread) #thread id (voyante) -> channel (voyante)
@@ -506,7 +513,7 @@ async def start(context):
 
         n_nuits += 1
 
-        game_state = is_game_over(context, players, lgs)
+        game_state = await is_game_over(context, players, lgs)
     print("Program has ended without errors.")
 
 async def is_game_over(context, players, lgs):
@@ -582,7 +589,7 @@ async def on_message(message):
         pf_channel = bot.get_channel(threads.get('petite fille_thread'))
         print(pf_channel)
         if pf_channel:
-            await pf_channel.send(f"Message de {message.author.name}: {message.content}")
+            await pf_channel.send(f"**{dico_lg[message.author.name]}**: \n {message.content} \n ‎ ")
 
 
 @bot.event
