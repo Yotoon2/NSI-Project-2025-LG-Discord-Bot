@@ -329,6 +329,7 @@ async def annonce_jour(context, cible_lg=None, cible_soso=None):
             await context.send(content=f"<@{cible_lg.amour.id}> est mort par chagrin d'amour")
             await asyncio.sleep(2)
             await context.send(content=f"Il était **{cible_lg.amour.role}**")
+
     if cible_soso is not None: #cible soso existe
         cible_soso.state = False
         morts.append(cible_soso)
