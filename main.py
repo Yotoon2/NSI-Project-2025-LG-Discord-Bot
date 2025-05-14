@@ -134,6 +134,18 @@ async def action_cupidon(context, cupi_chat, cupidon, players: list, dico: dict,
         cupi_timer = Timer(cupi_chat, 15, n_nuits)
         await cupi_timer.role_timer()
         await message_menu.delete()
+        print(f'Couple sélectionné : {affichage_menu.selectlove.couple}')
+
+        if affichage_menu.selectlove.couple == []:
+            random_choice = []
+            for i in players:
+                random_choice.append(i)
+            for i in range(2):
+                amoureux = random.choice(random_choice)
+                affichage_menu.selectlove.couple.append(amoureux)
+                random_choice.remove(amoureux)
+            print(f'SelectMenu None : {affichage_menu.selectlove.couple}')
+
         return affichage_menu.selectlove
 
 async def action_voyante(context, vovo_chat, voyante, players, n_nuits):
@@ -305,7 +317,9 @@ async def lock(role_chats):
 async def ping_couple(couple_chat, select_love):
     if select_love is not None:
         select_love.couple[0].amour = select_love.couple[1]
+        select_love.couple[0].camps = 'Couple'
         select_love.couple[1].amour = select_love.couple[0]
+        select_love.couple[1].camps = 'Couple'
         for i in range(2):
             print(select_love.couple)
             await call(couple_chat, select_love.couple[i])
@@ -314,7 +328,7 @@ async def ping_couple(couple_chat, select_love):
         await couple_chat.send(content=f"Le **Cupidon**, vous a choisi pour son **Couple**, vous avez accès à ce chat privé afin de communiquer jour comme nuit.")
 
 
-async def annonce_jour(context, cible_lg=None, cible_soso=None):
+async def annonce_jour(context, cible_lg=None, cible_soso=None, players=[], cupidon=None):
     morts = []
     if cible_lg is not None: #cible lg existe
         print(cible_lg)
@@ -323,12 +337,17 @@ async def annonce_jour(context, cible_lg=None, cible_soso=None):
         await context.send(content=f"<@{cible_lg.id}> s'est fait dévoré(e) par les loups cette nuit.")
         await asyncio.sleep(2)
         await context.send(content=f"Il était **{cible_lg.role}**")
+        await cible_lg.member.edit(mute=True)
+        players.remove(cible_lg)
         if cible_lg.amour is not None:
             cible_lg.amour.state = False
             morts.append(cible_lg.amour)
             await context.send(content=f"<@{cible_lg.amour.id}> est mort par chagrin d'amour")
             await asyncio.sleep(2)
             await context.send(content=f"Il était **{cible_lg.amour.role}**")
+            await cible_lg.amour.member.edit(mute=True)
+            players.remove(cible_lg.amour)
+            cupidon.camps = 'Village'
 
     if cible_soso is not None: #cible soso existe
         cible_soso.state = False
@@ -336,12 +355,17 @@ async def annonce_jour(context, cible_lg=None, cible_soso=None):
         await context.send(content=f"<@{cible_soso.id}> s'est fait tué(e) par la sorcière cette nuit.")
         await asyncio.sleep(2)
         await context.send(content=f"Il était **{cible_soso.role}**")
+        await cible_soso.member.edit(mute=True)
+        players.remove(cible_soso)
         if cible_soso.amour is not None:
             cible_soso.amour.state = False
             morts.append(cible_soso.amour)
             await context.send(content=f"<@{cible_soso.amour} est mort par chagrin d'amour")
             await asyncio.sleep(2)
             await context.send(content=f"Il était **{cible_soso.amour.role}**")
+            await cible_soso.amour.member.edit(mute=True)
+            players.remove(cible_soso.amour)
+            cupidon.camps = 'Village'
     if morts == []: #cas où personne n'a été ciblé
         await context.send(content=f"Personne n'est mort cette nuit.")
     else: #cas où au moins une personne a été ciblée
@@ -460,7 +484,7 @@ async def start(context):
     await soso_chat.edit(locked=True)
 
     #ANNONCE DES MORTS
-    await annonce_jour(context, cible_lg, cible_soso)
+    await annonce_jour(context, cible_lg, cible_soso, players, cupidon)
     if cible_vovo is not None:
         await vovo_chat.send(f"La personne que vous avez espionné est **{cible_vovo.role}**.")
 
@@ -507,7 +531,7 @@ async def start(context):
         await soso_chat.edit(locked=True)
 
         #ANNONCE DES MORTS
-        await annonce_jour(context, cible_lg, cible_soso)
+        await annonce_jour(context, cible_lg, cible_soso, players, cupidon)
         if cible_vovo is not None:
             await vovo_chat.send(f"La personne que vous avez espionné est **{cible_vovo.role}**.")
 
@@ -554,9 +578,22 @@ async def clear_threads(context):
     print("Clearing Threads...")
     l_threads = context.channel.threads
     threads = {}
+    n_jours = 1
+    print(l_threads)
     for thread in l_threads:
-        await thread.delete()
+        try:
+            print(f"Deleting thread: {thread.name} (ID: {thread.id})")
+            await thread.delete()
+        except discord.errors.NotFound:
+            print(f"Thread {thread.id} not found, skipping...")
+        except discord.errors.Forbidden:
+            print(f"Permission denied for thread {thread.id}, skipping...")
+        except Exception as e:
+            print(f"Error deleting thread {thread.id}: {e}")
     print("Cleared.")
+
+
+
 
 @bot.command()
 async def mut(context, member: discord.Member):
@@ -579,7 +616,7 @@ async def on_message(message):
         return
 
     # Vérifiez si le message est une commande
-    if message.content.startswith('!start') or message.content.startswith('!ct'):
+    if message.content.startswith('!start') or message.content.startswith('!ct') or message.content.startswith('!compo'):
         await bot.process_commands(message)
         return
 
