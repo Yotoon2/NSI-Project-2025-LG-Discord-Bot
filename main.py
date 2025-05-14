@@ -14,9 +14,10 @@ token = 'MTM1OTUxODk0OTA0MTExNTMyMA.GWVATN.B_qihYlFhcYWxI0NMrTVE-sI7-eDvQEKZgz6n
 intents = discord.Intents.all()
 bot = commands.Bot(command_prefix='!', intents=intents)
 
-threads = {}
 
+threads = {}
 dico_lg = {}
+
 
 # @bot.command() # Create a slash command
 async def button(context, potion_vie, cible_lg):
@@ -87,7 +88,14 @@ async def role_assign(context, nb_players, members: literal_eval):
         roles.remove(role)
         member = random.choice(members)
         members.remove(member)
-        liste.append(Player(member.name, member.id, role, True, member = member))
+        if role == "Loup Garou":
+            liste.append(Player(member.name, member.id, role, True, member = member, camp="LG"))
+        elif role == "Cupidon":
+            liste.append(Player(member.name, member.id, role, True, member=member, camp="Couple"))
+        else:
+            liste.append(Player(member.name, member.id, role, True, member=member, camp="Village"))
+
+
     # print(f"liste_player: {liste[0].name}")
     return liste
 
@@ -123,7 +131,7 @@ async def action_cupidon(context, cupi_chat, cupidon, players: list, dico: dict,
     elif cupidon.state == False:
         print("Le cupidon est mort")
     else:
-        #await context.send("C'est au tour du **Cupidon**")
+        await context.send("C'est au tour du **Cupidon**")
         cupi_channel = bot.get_channel(threads.get('cupidon_thread'))
         await cupi_channel.send(f"**C'est au tour du Cupidon**")
         print('cupi')
@@ -436,11 +444,9 @@ async def start(context):
     start = Timer(context, 2, None)
     await start.start_timer() # compteur de départ
 
-    dead_ppl = []
+    n_jours = 1
     potion_vie = True
     potion_mort = True
-    n_jours = 1
-    n_nuits = 1
     temps_discussion = 12
     await asyncio.sleep(1)
 
@@ -449,36 +455,36 @@ async def start(context):
     #DISCUSSION
     tdiscu = Timer(context, temps_discussion-10, n_jours)
     await tdiscu.discussion()
-    n_jours += 1
-    n_nuits += 1
     await asyncio.sleep(1)
 
-    #CUPIDON
-    select_love = await action_cupidon(channel, cupi_chat, cupidon, players, dico_players, n_nuits) #renvoie l'objet de la class selectviewcupi
-    await cupi_chat.edit(locked=True)
-    await ping_couple(couple_chat, select_love)
-
     #NUIT
+    await context.send(content=f"## Nuit {n_jours}")
     await context.edit(locked=True) #lock le chat du village pour la nuit
     await asyncio.sleep(1)
     await context.typing() #event qui va déclencher le timer de nuit
     await asyncio.sleep(1)
 
+    #CUPIDON
+    select_love = await action_cupidon(channel, cupi_chat, cupidon, players, dico_players, n_jours) #renvoie l'objet de la class selectviewcupi
+    await cupi_chat.edit(locked=True)
+    await ping_couple(couple_chat, select_love)
+
+
     #VOYANTE
-    await action_voyante(context, vovo_chat, voyante, players, n_nuits) #vovo choisis cible
+    await action_voyante(context, vovo_chat, voyante, players, n_jours) #vovo choisis cible
     await vovo_chat.edit(locked=True) #lock le chat de la vovo
     cible_vovo = await cible_vote(vovo_chat, players, voyante) #cible est récup ici (type class player)
     await reset_votes(context, players) #vote reset
 
     #LOUP GAROU
-    await action_lg(context, lg_chat, lgs, players, n_nuits) #lgs choisissent cible
+    await action_lg(context, lg_chat, lgs, players, n_jours) #lgs choisissent cible
     await lg_chat.edit(locked=True) #lock chat des lgs
     cible_lg = await cible_vote(lg_chat, players, lgs)
     await reset_votes(context, players) #vote reset
 
     #SORCIERE
     if sorciere is not None:
-        cible_lg, potion_vie = await action_sorciere(context=context, soso_chat=soso_chat, sorciere=sorciere, players=players, n_nuits=n_nuits,
+        cible_lg, potion_vie = await action_sorciere(context=context, soso_chat=soso_chat, sorciere=sorciere, players=players, n_nuits=n_jours,
                                          potion_vie=potion_vie, potion_mort=potion_mort, cible_lg=cible_lg)
     cible_soso = await cible_vote(soso_chat, players, sorciere)
     await soso_chat.edit(locked=True)
@@ -488,6 +494,7 @@ async def start(context):
     if cible_vovo is not None:
         await vovo_chat.send(f"La personne que vous avez espionné est **{cible_vovo.role}**.")
 
+    n_jours += 1
     game_state = True  # True = le jeu est en cours, False = le jeu est fini
     #BOUCLE DE JEU
     while game_state == True:
@@ -495,7 +502,6 @@ async def start(context):
         #DISCUSSION
         tdiscu = Timer(context, temps_discussion-10, n_jours)
         await tdiscu.discussion()
-        n_jours += 1
         await asyncio.sleep(1)
 
         #VOTE
@@ -506,26 +512,27 @@ async def start(context):
         await reset_votes(context, players) #remet les compteurs de vote a 0
 
         #NUIT
+        await context.send(content=f"## Nuit {n_jours}")
         await context.edit(locked=True) #lock le chat du village pour la nuit
         await asyncio.sleep(1)
         await context.typing() #event qui va déclencher le timer de nuit
         await asyncio.sleep(1)
 
         #VOYANTE
-        await action_voyante(context, vovo_chat, voyante, players, n_nuits) #vovo choisis cible
+        await action_voyante(context, vovo_chat, voyante, players, n_jours) #vovo choisis cible
         await vovo_chat.edit(locked=True) #lock le chat de la vovo
         cible_vovo = await cible_vote(vovo_chat, players, voyante) #cible est récup ici (type class player)
         await reset_votes(context, players) #vote reset
 
         #LOUP GAROU
-        await action_lg(context, lg_chat, lgs, players, n_nuits) #lgs choisissent cible
+        await action_lg(context, lg_chat, lgs, players, n_jours) #lgs choisissent cible
         await lg_chat.edit(locked=True) #lock chat des lgs
         cible_lg = await cible_vote(lg_chat, players, lgs)
         await reset_votes(context, players) #vote reset
 
         #SORCIERE
         if sorciere is not None:
-            cible_lg, potion_vie = await action_sorciere(context=context, soso_chat=soso_chat, sorciere=sorciere, players=players, n_nuits=n_nuits,
+            cible_lg, potion_vie = await action_sorciere(context=context, soso_chat=soso_chat, sorciere=sorciere, players=players, n_nuits=n_jours,
                                            potion_vie=potion_vie, potion_mort=potion_mort, cible_lg=cible_lg)
         cible_soso = await cible_vote(soso_chat, players, sorciere)
         await soso_chat.edit(locked=True)
@@ -535,9 +542,9 @@ async def start(context):
         if cible_vovo is not None:
             await vovo_chat.send(f"La personne que vous avez espionné est **{cible_vovo.role}**.")
 
-        n_nuits += 1
 
         game_state = await is_game_over(context, players, lgs)
+        n_jours += 1
     print("Program has ended without errors.")
 
 async def is_game_over(context, players, lgs):
@@ -570,7 +577,7 @@ async def is_game_over(context, players, lgs):
 async def on_typing(context, user, when): #night timer
     bot_id = 1359518949041115320
     if user.id == bot_id:
-        night = Timer(context, 30, 1)
+        night = Timer(context, 30)
         await night.night_timer()
 
 @bot.command(aliases=["ct", "cleart", "clear"])

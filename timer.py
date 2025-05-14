@@ -61,7 +61,6 @@ class Timer():
 
     async def night_timer(self):
         """Timer de nuit"""
-        await self.context.send(content=f"## Nuit {self.n_jours}")
         msg = await self.context.send(f"Il reste {self.time} secondes avant la fin de la nuit.")
         for i in range(0, self.time):
             await asyncio.sleep(1)
