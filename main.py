@@ -1,3 +1,5 @@
+from threading import main_thread
+
 import discord
 from discord.ext import commands, tasks
 import asyncio
@@ -89,11 +91,11 @@ async def role_assign(context, nb_players, members: literal_eval):
         member = random.choice(members)
         members.remove(member)
         if role == "Loup Garou":
-            liste.append(Player(member.name, member.id, role, True, member = member, camp="LG"))
+            liste.append(Player(member.name, member.id, role, True, member = member, camps="LG"))
         elif role == "Cupidon":
-            liste.append(Player(member.name, member.id, role, True, member=member, camp="Couple"))
+            liste.append(Player(member.name, member.id, role, True, member=member, camps="Couple"))
         else:
-            liste.append(Player(member.name, member.id, role, True, member=member, camp="Village"))
+            liste.append(Player(member.name, member.id, role, True, member=member, camps="Village"))
 
 
     # print(f"liste_player: {liste[0].name}")
@@ -186,13 +188,16 @@ async def action_lg(context, lg_chat, lgs, players, n_nuits):
         lg_timer = Timer(lg_chat, 15, n_nuits)
         await lg_timer.role_timer()
         await kill_menu.delete()
+        del kill_menu
 
 async def action_sorciere(context, soso_chat, sorciere, players, n_nuits, potion_vie, potion_mort, cible_lg):
     pdv_menu = None
     if sorciere == None:
         print("Il n'y a pas de sorcière dans la partie")
+        return cible_lg, potion_vie, potion_mort
     elif sorciere.state == False:
         print("La sorcière est morte")
+        return cible_lg, potion_vie, potion_mort
     else:
         await context.send("C'est au tour de la **Sorcière**.")
         print("soso")
@@ -221,10 +226,19 @@ async def action_sorciere(context, soso_chat, sorciere, players, n_nuits, potion
             # await context.channel.set_permissions(sorciere.member, send_messages_in_threads=False)
             soso_timer = Timer(soso_chat, 5, n_nuits)
             await soso_timer.role_timer()
-            if pdv_menu is not None:
-                return pdv_menu.cible_lg, pdv_menu.potion_vie
-            else:
-                return cible_lg, False
+        if pdv_menu is not None and pdm_menu is None:
+            cible_lg, potion_vie = pdv_menu.cible_lg, pdv_menu.potion_vie
+
+            return cible_lg, potion_vie, potion_mort
+        elif pdv_menu is not None and pdm_menu is not None:
+            cible_lg, potion_vie = pdv_menu.cible_lg, pdv_menu.potion_vie
+            del pdm_menu
+            return cible_lg, potion_vie, False
+        elif pdv_menu is None and pdm_menu is not None:
+            del pdm_menu
+            return cible_lg, potion_vie, False
+        else:
+            return cible_lg, potion_vie, potion_mort
 
 
 async def dico_joueurs(context, players):
@@ -484,7 +498,7 @@ async def start(context):
 
     #SORCIERE
     if sorciere is not None:
-        cible_lg, potion_vie = await action_sorciere(context=context, soso_chat=soso_chat, sorciere=sorciere, players=players, n_nuits=n_jours,
+        cible_lg, potion_vie, potion_mort = await action_sorciere(context=context, soso_chat=soso_chat, sorciere=sorciere, players=players, n_nuits=n_jours,
                                          potion_vie=potion_vie, potion_mort=potion_mort, cible_lg=cible_lg)
     cible_soso = await cible_vote(soso_chat, players, sorciere)
     await soso_chat.edit(locked=True)
@@ -495,7 +509,7 @@ async def start(context):
         await vovo_chat.send(f"La personne que vous avez espionné est **{cible_vovo.role}**.")
 
     n_jours += 1
-    game_state = True  # True = le jeu est en cours, False = le jeu est fini
+    game_state = await is_game_over(context, players, lgs)  # True = le jeu est en cours, False = le jeu est fini
     #BOUCLE DE JEU
     while game_state == True:
 
@@ -532,7 +546,7 @@ async def start(context):
 
         #SORCIERE
         if sorciere is not None:
-            cible_lg, potion_vie = await action_sorciere(context=context, soso_chat=soso_chat, sorciere=sorciere, players=players, n_nuits=n_jours,
+            cible_lg, potion_vie, potion_mort = await action_sorciere(context=context, soso_chat=soso_chat, sorciere=sorciere, players=players, n_nuits=n_jours,
                                            potion_vie=potion_vie, potion_mort=potion_mort, cible_lg=cible_lg)
         cible_soso = await cible_vote(soso_chat, players, sorciere)
         await soso_chat.edit(locked=True)
@@ -548,28 +562,18 @@ async def start(context):
     print("Program has ended without errors.")
 
 async def is_game_over(context, players, lgs):
-    lgs_vivants = 0
-    players_vivants = 0
-    for lg in lgs:
-        if lg.state == True:
-            lgs_vivants += 1
-    for player in players:
-        if player.state == True:
-            players_vivants += 1
+    first_team = players[0].camps
+    for joueur in players:
+        if joueur.camps != first_team:
+            return True
+    if first_team == 'Couple':
+        await context.send(f"Et c'est une victoire pour... le couple !")
+    elif first_team == 'Village':
+        await context.send(f"Et c'est une victoire pour... le village !")
+    if first_team == 'LG':
+        await context.send(f"Et c'est une victoire pour... les LGs !")
 
-    if players_vivants - lgs_vivants == lgs_vivants:
-        await context.send("La partie est terminée!")
-        await context.send("Les Loups-Garous ont gagné!")
-        return False
-
-    elif lgs_vivants == 0:
-        await context.send("La partie est terminée!")
-        await context.send("Les Villageois ont gagné!")
-        return False
-
-    else:
-        return True
-
+    return False
 
 
 
