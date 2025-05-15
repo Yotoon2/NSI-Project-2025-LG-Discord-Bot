@@ -1,7 +1,7 @@
 import discord
 class Player():
     """Classe joueur"""
-    def __init__(self, name, id: int, role, state: bool, member: discord.Member, nvote: int = 0, previous_vote = None, amour = None, camps = None):
+    def __init__(self, name, id: int, role, state: bool, member: discord.Member, nvote: int = 0, previous_vote = None, amour = None, camp = None):
         self.name = name
         self.id = id
         self.role = role
