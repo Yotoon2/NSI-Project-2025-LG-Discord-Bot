@@ -91,11 +91,11 @@ async def role_assign(context, nb_players, members: literal_eval):
         member = random.choice(members)
         members.remove(member)
         if role == "Loup Garou":
-            liste.append(Player(member.name, member.id, role, True, member = member, camps="LG"))
+            liste.append(Player(member.name, member.id, role, True, member = member, camp="LG"))
         elif role == "Cupidon":
-            liste.append(Player(member.name, member.id, role, True, member=member, camps="Couple"))
+            liste.append(Player(member.name, member.id, role, True, member=member, camp="Couple"))
         else:
-            liste.append(Player(member.name, member.id, role, True, member=member, camps="Village"))
+            liste.append(Player(member.name, member.id, role, True, member=member, camp="Village"))
 
 
     # print(f"liste_player: {liste[0].name}")
@@ -122,10 +122,39 @@ async def thread(context, name: str):
     threads[f'{name.lower()}_thread'] = thread.id  # Stocker l'ID du thread dans le dictionnaire
     return thread.id
 
+async def create_channel(context, name:str):
+    """Créé un channel privé et renvoie son ID"""
+    cat = context.category
+    pos = context.position
+    guild = context.guild
+    overwrites = {guild.default_role: discord.PermissionOverwrite(read_messages = False, send_messages=False),
+                  guild.morts: discord.PermissionOverwrite(read_messages = True, send_messages = True)}
+    channel = cat.create_text_channel(name=name, overwrites=overwrites , position=pos+1)
+    print(channel)
+    print(type(channel))
+
+
+
 async def reset_votes(context, players: list):
     for player in players:
         player.nvote = 0
         player.previous_vote = None
+
+def temps_nuit(cupidon, voyante, sorciere):
+    counter = 0
+    with open("counter.txt", "r") as f:
+        counter = int(f.read())
+        f.close()
+        if cupidon == None:
+            counter -= 1
+        if voyante == None or voyante.state == False:
+            counter -= 1
+        if sorciere == None or sorciere.state == False:
+            counter -= 1
+    with open("counter.txt", 'w') as f:
+        f.write(f"{counter}")
+        f.close()
+
 
 async def action_cupidon(context, cupi_chat, cupidon, players: list, dico: dict, n_nuits):
     if cupidon == None:
@@ -141,7 +170,7 @@ async def action_cupidon(context, cupi_chat, cupidon, players: list, dico: dict,
                                             text="Choisissez les deux joueurs qui deviendront les membres du couple. Si vous ne choisissez pas, il sera choisi aléatoirement.")
         await cupi_chat.edit(locked=False)
         #await context.channel.set_permissions(cupidon.member, send_messages_in_threads=False)
-        cupi_timer = Timer(cupi_chat, 15, n_nuits)
+        cupi_timer = Timer(cupi_chat, 10, n_nuits)
         await cupi_timer.role_timer()
         await message_menu.delete()
         print(f'Couple sélectionné : {affichage_menu.selectlove.couple}')
@@ -169,7 +198,7 @@ async def action_voyante(context, vovo_chat, voyante, players, n_nuits):
         bdc = await menu(vovo_chat, players,"Choisissez la personne dont vous voulez révéler le rôle.", voyante)
         await vovo_chat.edit(locked=False)
         #await context.channel.set_permissions(voyante.member, send_messages_in_threads=False)
-        vovo_timer = Timer(vovo_chat, 15, n_nuits)
+        vovo_timer = Timer(vovo_chat, 10, n_nuits)
         await vovo_timer.role_timer()
         await bdc.delete()
 
@@ -185,7 +214,7 @@ async def action_lg(context, lg_chat, lgs, players, n_nuits):
         print("lgs")
         kill_menu = await menu(lg_chat, players,"Choisissez la personne que vous voulez dévorer.", lgs[0])
         await lg_chat.edit(locked=False)
-        lg_timer = Timer(lg_chat, 15, n_nuits)
+        lg_timer = Timer(lg_chat, 10, n_nuits)
         await lg_timer.role_timer()
         await kill_menu.delete()
         del kill_menu
@@ -225,7 +254,7 @@ async def action_sorciere(context, soso_chat, sorciere, players, n_nuits, potion
 
             await soso_chat.edit(locked=False)
             # await context.channel.set_permissions(sorciere.member, send_messages_in_threads=False)
-            soso_timer = Timer(soso_chat, 5, n_nuits)
+            soso_timer = Timer(soso_chat, 10, n_nuits)
             await soso_timer.role_timer()
             cible_soso = await cible_vote(soso_chat, players, sorciere, potion_mort)
             if pdv_menu is None and cible_soso is not None:
@@ -342,9 +371,9 @@ async def lock(role_chats):
 async def ping_couple(couple_chat, select_love):
     if select_love is not None:
         select_love.couple[0].amour = select_love.couple[1]
-        select_love.couple[0].camps = 'Couple'
+        select_love.couple[0].camp = 'Couple'
         select_love.couple[1].amour = select_love.couple[0]
-        select_love.couple[1].camps = 'Couple'
+        select_love.couple[1].camp = 'Couple'
         for i in range(2):
             print(select_love.couple)
             await call(couple_chat, select_love.couple[i])
@@ -372,7 +401,7 @@ async def annonce_jour(context, cible_lg=None, cible_soso=None, players=[], cupi
             await context.send(content=f"Il était **{cible_lg.amour.role}**")
             await cible_lg.amour.member.edit(mute=True)
             players.remove(cible_lg.amour)
-            cupidon.camps = 'Village'
+            cupidon.camp = 'Village'
 
     if cible_soso is not None: #cible soso existe
         cible_soso.state = False
@@ -390,7 +419,7 @@ async def annonce_jour(context, cible_lg=None, cible_soso=None, players=[], cupi
             await context.send(content=f"Il était **{cible_soso.amour.role}**")
             await cible_soso.amour.member.edit(mute=True)
             players.remove(cible_soso.amour)
-            cupidon.camps = 'Village'
+            cupidon.camp = 'Village'
     if morts == []: #cas où personne n'a été ciblé
         await context.send(content=f"Personne n'est mort cette nuit.")
     else: #cas où au moins une personne a été ciblée
@@ -423,7 +452,7 @@ async def start(context):
     pf_thread = await thread(context, "Petite Fille") #créé thread privé de la PF
     soso_thread = await thread(context, "Sorcière")  # créé thread privé de la sorciere
     couple_thread = await thread(context, "Couple")
-
+    #channel_morts = await create_channel(context.channel, "Morts")
     print(threads)
 
     channel = context
@@ -460,6 +489,7 @@ async def start(context):
     for i in range(len(role_chats)):
         await call(role_chats[i], roles_nuit[i]) #ajoute les roles a leur thread
 
+    #DEPART DU JEU
     start = Timer(context, 2, None)
     await start.start_timer() # compteur de départ
 
@@ -467,7 +497,9 @@ async def start(context):
     potion_vie = True
     potion_mort = True
     temps_discussion = 12
+    temps_nuit(cupidon, voyante, sorciere)
     await asyncio.sleep(1)
+
 
     #PREMIER ROUND
 
@@ -477,7 +509,7 @@ async def start(context):
     await asyncio.sleep(1)
 
     #NUIT
-    await context.send(content=f"## Nuit {n_jours}")
+    await context.send(content=f"# Nuit {n_jours}")
     await context.edit(locked=True) #lock le chat du village pour la nuit
     await asyncio.sleep(1)
     await context.typing() #event qui va déclencher le timer de nuit
@@ -517,7 +549,7 @@ async def start(context):
     #BOUCLE DE JEU
     print(f'Mort :{morts}')
     while game_state == True:
-
+        temps_nuit(cupidon, voyante, sorciere)
         #DISCUSSION
         tdiscu = Timer(context, temps_discussion-10, n_jours)
         await tdiscu.discussion()
@@ -531,7 +563,7 @@ async def start(context):
         await reset_votes(context, players) #remet les compteurs de vote a 0
 
         #NUIT
-        await context.send(content=f"## Nuit {n_jours}")
+        await context.send(content=f"# Nuit {n_jours}")
         await context.edit(locked=True) #lock le chat du village pour la nuit
         await asyncio.sleep(1)
         await context.typing() #event qui va déclencher le timer de nuit
@@ -568,13 +600,17 @@ async def start(context):
         await joueur.member.edit(mute=False)
     print("Program has ended without errors.")
 
+
 async def is_game_over(context, players, lgs):
-    first_team = players[0].camps
+    if players == []:
+        await context.send('Bah ils sont cons vos potes ils se sont crosskill ces abrutis')
+        return False
+    first_team = players[0].camp
     for joueur in players:
-        if joueur.camps != first_team:
+        if joueur.camp != first_team:
             return True
     if first_team == 'Couple':
-        await context.send(f"Et c'est une victoire pour... le couple !")
+        await context.send(f"# Victoire du **Couple** !")
     elif first_team == 'Village':
         await context.send(f"# Victoire du **Village** !")
     elif first_team == 'LG':
@@ -588,7 +624,12 @@ async def is_game_over(context, players, lgs):
 async def on_typing(context, user, when): #night timer
     bot_id = 1359518949041115320
     if user.id == bot_id:
-        night = Timer(context, 30)
+        with open("counter.txt", "r") as f:
+            counter = f.read()
+            print(counter)
+            temps = int(counter) * 12
+            f.close()
+        night = Timer(context, temps)
         await night.night_timer()
 
 @bot.command(aliases=["ct", "cleart", "clear"])
@@ -596,7 +637,9 @@ async def clear_threads(context):
     print("Clearing Threads...")
     l_threads = context.channel.threads
     threads = {}
-    n_jours = 1
+    with open("counter.txt", "w") as f: #compteur nuit
+        f.write("4")
+        f.close()
     print(l_threads)
     for thread in l_threads:
         try:
@@ -608,6 +651,7 @@ async def clear_threads(context):
             print(f"Permission denied for thread {thread.id}, skipping...")
         except Exception as e:
             print(f"Error deleting thread {thread.id}: {e}")
+
     print("Cleared.")
 
 

@@ -10,7 +10,7 @@ class Player():
         self.nvote = nvote
         self.previous_vote = previous_vote
         self.amour = amour
-        self.camps = camps
+        self.camp = camp
 
 
     async def is_alive(self):
