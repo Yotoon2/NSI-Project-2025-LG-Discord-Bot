@@ -59,7 +59,7 @@ async def composition(context, nb_players: int, *, compo: literal_eval = []):
     nb_players = int(nb_players)
     compo = list(compo)
     if compo == []:
-        with open(f"compo{nb_players}.txt", "r") as f:
+        with open(f"./compos/compo{nb_players}.txt", "r") as f:
             await context.send(f"Composition actuelle pour {nb_players} joueurs: {f.read()}")
     elif nb_players < 6 or nb_players > 12:
         await context.send('Veuillez choisir un chiffre entre 6 et 12')
@@ -68,7 +68,7 @@ async def composition(context, nb_players: int, *, compo: literal_eval = []):
         await context.send("Il faut le même nombre de rôles que de joueurs")
         raise IndexError("n players don't match n roles")
     else:
-        open(f"compo{nb_players}.txt").close()
+        open(f"./compos/compo{nb_players}.txt").close()
         with open(f"compo{nb_players}.txt", "w") as f:
             f.write(str(compo))
         await context.send(f"{compo}")
@@ -78,7 +78,7 @@ async def get_compo(context, nb_players: int):
     """Récupère une composition de rôles dont on a besoin"""
     # if nb_players < 6 or nb_players > 12: #enlever commentaire pour vrai test
     #     raise IndexError("6 <= int <= 12")
-    with open(f"compo{nb_players}.txt", "r") as f:
+    with open(f"./compos/compo{nb_players}.txt", "r") as f:
         return literal_eval(f.read())
 
 async def role_assign(context, nb_players, members: literal_eval):
@@ -127,9 +127,11 @@ async def create_channel(context, name:str):
     cat = context.category
     pos = context.position
     guild = context.guild
+    role_mort = guild.get_role(1372099519944069210)
+    print(role_mort)
     overwrites = {guild.default_role: discord.PermissionOverwrite(read_messages = False, send_messages=False),
-                  guild.morts: discord.PermissionOverwrite(read_messages = True, send_messages = True)}
-    channel = cat.create_text_channel(name=name, overwrites=overwrites , position=pos+1)
+                  guild.get_role(1372099519944069210): discord.PermissionOverwrite(read_messages = True, send_messages = True)}
+    channel = await cat.create_text_channel(name=name, overwrites=overwrites , position=pos)
     print(channel)
     print(type(channel))
 
@@ -140,17 +142,21 @@ async def reset_votes(context, players: list):
         player.nvote = 0
         player.previous_vote = None
 
-def temps_nuit(cupidon, voyante, sorciere):
+def temps_nuit(cupidon, voyante, lgs, sorciere, n_nuits):
     counter = 0
     with open("counter.txt", "r") as f:
         counter = int(f.read())
         f.close()
-        if cupidon == None:
-            counter -= 1
-        if voyante == None or voyante.state == False:
-            counter -= 1
-        if sorciere == None or sorciere.state == False:
-            counter -= 1
+        if cupidon != None and n_nuits == 1:
+            counter += 1
+        if voyante != None and voyante.state == True:
+            counter += 1
+        if sorciere != None and sorciere.state == True:
+            counter += 1
+        for lg in lgs:
+            if lg.state == True:
+                counter += 1
+                break
     with open("counter.txt", 'w') as f:
         f.write(f"{counter}")
         f.close()
@@ -224,10 +230,10 @@ async def action_sorciere(context, soso_chat, sorciere, players, n_nuits, potion
     cible_soso = None
     if sorciere == None:
         print("Il n'y a pas de sorcière dans la partie")
-        return cible_lg, potion_vie, potion_mort
+        return cible_lg, potion_vie, potion_mort, cible_soso
     elif sorciere.state == False:
         print("La sorcière est morte")
-        return cible_lg, potion_vie, potion_mort
+        return cible_lg, potion_vie, potion_mort, cible_soso
     else:
         await context.send("C'est au tour de la **Sorcière**.")
         print("soso")
@@ -424,7 +430,8 @@ async def annonce_jour(context, cible_lg=None, cible_soso=None, players=[], cupi
         await context.send(content=f"Personne n'est mort cette nuit.")
     else: #cas où au moins une personne a été ciblée
         for mort in morts:
-            await mort.member.edit(mute=True)
+            await mort.member.edit(mute=True, role=mort.member.role+[])
+
     return morts
 
 async def nom_façade(context, lgs):
@@ -452,7 +459,7 @@ async def start(context):
     pf_thread = await thread(context, "Petite Fille") #créé thread privé de la PF
     soso_thread = await thread(context, "Sorcière")  # créé thread privé de la sorciere
     couple_thread = await thread(context, "Couple")
-    #channel_morts = await create_channel(context.channel, "Morts")
+    channel_morts = await create_channel(context.channel, "Morts")
     print(threads)
 
     channel = context
@@ -497,7 +504,7 @@ async def start(context):
     potion_vie = True
     potion_mort = True
     temps_discussion = 12
-    temps_nuit(cupidon, voyante, sorciere)
+    temps_nuit(cupidon, voyante, lgs, sorciere, n_jours)
     await asyncio.sleep(1)
 
 
@@ -534,8 +541,7 @@ async def start(context):
     await reset_votes(context, players) #vote reset
 
     #SORCIERE
-    if sorciere is not None:
-        cible_lg, potion_vie, potion_mort, cible_soso = await action_sorciere(context=context, soso_chat=soso_chat, sorciere=sorciere, players=players, n_nuits=n_jours,
+    cible_lg, potion_vie, potion_mort, cible_soso = await action_sorciere(context=context, soso_chat=soso_chat, sorciere=sorciere, players=players, n_nuits=n_jours,
                                          potion_vie=potion_vie, potion_mort=potion_mort, cible_lg=cible_lg)
     await soso_chat.edit(locked=True)
 
@@ -549,7 +555,7 @@ async def start(context):
     #BOUCLE DE JEU
     print(f'Mort :{morts}')
     while game_state == True:
-        temps_nuit(cupidon, voyante, sorciere)
+        temps_nuit(cupidon, voyante, lgs, sorciere, n_jours)
         #DISCUSSION
         tdiscu = Timer(context, temps_discussion-10, n_jours)
         await tdiscu.discussion()
@@ -627,7 +633,7 @@ async def on_typing(context, user, when): #night timer
         with open("counter.txt", "r") as f:
             counter = f.read()
             print(counter)
-            temps = int(counter) * 12
+            temps = int(counter) * 12.5
             f.close()
         night = Timer(context, temps)
         await night.night_timer()
@@ -636,9 +642,13 @@ async def on_typing(context, user, when): #night timer
 async def clear_threads(context):
     print("Clearing Threads...")
     l_threads = context.channel.threads
+    pos = context.channel.category.position + 1
+    channel_morts = context.channel.category.channels[pos]
+    if channel_morts.name == "morts":
+        await channel_morts.delete()
     threads = {}
     with open("counter.txt", "w") as f: #compteur nuit
-        f.write("4")
+        f.write("0")
         f.close()
     print(l_threads)
     for thread in l_threads:
