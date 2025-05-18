@@ -143,6 +143,9 @@ async def create_channel_mort(context, name:str):
     overwrites = {guild.default_role: discord.PermissionOverwrite(read_messages = False, send_messages=False),
                   guild.get_role(role_mort_id): discord.PermissionOverwrite(read_messages = True, send_messages = True)}
     channel = await cat.create_text_channel(name=name, overwrites=overwrites , position=pos_channel)
+    with open("compos\role_mort_id.txt", "w") as f:
+        f.write(str(role_mort_id))
+        f.close()
 
 
 
@@ -153,19 +156,16 @@ async def reset_votes(context, players: list):
 
 def temps_nuit(cupidon, voyante, lgs, sorciere, n_nuits):
     counter = 0
-    with open("counter.txt", "r") as f:
-        counter = int(f.read())
-        f.close()
-        if cupidon != None and n_nuits == 1:
+    if cupidon != None and n_nuits == 1:
+        counter += 1
+    if voyante != None and voyante.state == True:
+        counter += 1
+    if sorciere != None and sorciere.state == True:
+        counter += 1
+    for lg in lgs:
+        if lg.state == True:
             counter += 1
-        if voyante != None and voyante.state == True:
-            counter += 1
-        if sorciere != None and sorciere.state == True:
-            counter += 1
-        for lg in lgs:
-            if lg.state == True:
-                counter += 1
-                break
+            break
     with open("counter.txt", 'w') as f:
         f.write(f"{counter}")
         f.close()
@@ -438,10 +438,25 @@ async def annonce_jour(context, cible_lg=None, cible_soso=None, players=[], cupi
     if morts == []: #cas où personne n'a été ciblé
         await context.send(content=f"Personne n'est mort cette nuit.")
     else: #cas où au moins une personne a été ciblée
-        for mort in morts:
-            await mort.member.edit(mute=True, role=mort.member.role+[])
-
+        with open("compos\role_mort_id.txt", "r") as f:
+            guild = context.guild
+            role_mort_id = int(f.read())
+            for mort in morts:
+                await mort.member.edit(mute=True, roles=mort.member.roles+[guild.get_role(role_mort_id)])
+                print(f"liste_roles_mort: {mort.member.roles}")
     return morts
+
+#endroit
+
+
+
+
+
+
+
+
+
+
 
 async def nom_façade(context, lgs):
     noms = ["Loup-Garou Gentil", "Loup-Garou Bourré", "Loup-Garou Affamé"]
@@ -468,7 +483,7 @@ async def start(context):
     pf_thread = await thread(context, "Petite Fille") #créé thread privé de la PF
     soso_thread = await thread(context, "Sorcière")  # créé thread privé de la sorciere
     couple_thread = await thread(context, "Couple")
-    channel_morts = await create_channel_mort(context.channel, "Morts")
+    channel_mort = await create_channel_mort(context.channel, "Morts")
     print(threads)
 
     channel = context
@@ -554,28 +569,35 @@ async def start(context):
                                          potion_vie=potion_vie, potion_mort=potion_mort, cible_lg=cible_lg)
     await soso_chat.edit(locked=True)
 
-    #ANNONCE DES MORTS
+    #ANNONCE DES MORTS ET DIVERS
     morts += await annonce_jour(context, cible_lg, cible_soso, players, cupidon)
     if cible_vovo is not None:
         await vovo_chat.send(f"La personne que vous avez espionné est **{cible_vovo.role}**.")
 
     n_jours += 1
-    game_state = await is_game_over(context, players, lgs)  # True = le jeu est en cours, False = le jeu est fini
+    game_state = await is_game_over(context, players)  # True = le jeu est en cours, False = le jeu est fini
     #BOUCLE DE JEU
     print(f'Mort :{morts}')
     while game_state == True:
         temps_nuit(cupidon, voyante, lgs, sorciere, n_jours)
         #DISCUSSION
+        await context.edit(locked=False)
         tdiscu = Timer(context, temps_discussion-10, n_jours)
         await tdiscu.discussion()
         await asyncio.sleep(1)
 
         #VOTE
-        vote = Timer(context, 1, n_jours=0)
+        vote = Timer(context, 15, n_jours=0)
         await vote.vote_village(players=players) #commence le vote du village
         await asyncio.sleep(1)
         await cible_vote(context, players, None, potion_mort) #annonce les résultats et la mort de la personne voté
         await reset_votes(context, players) #remet les compteurs de vote a 0
+
+        #GAME OVER?
+        game_state = await is_game_over(context, players)
+        #YES
+        if game_state == False:
+            break
 
         #NUIT
         await context.send(content=f"# Nuit {n_jours}")
@@ -608,15 +630,18 @@ async def start(context):
             await vovo_chat.send(f"La personne que vous avez espionné est **{cible_vovo.role}**.")
 
 
-        game_state = await is_game_over(context, players, lgs)
+        game_state = await is_game_over(context, players)
         n_jours += 1
         print(f'Mort :{morts}')
-    for joueur in morts:
-        await joueur.member.edit(mute=False)
+    for mort in morts:
+        await mort.member.edit(mute=False)
+        for i in range(len(mort.member.roles)):
+            if mort.member.roles[i].name == "Morts":
+                mort.member.roles.pop(i)
     print("Program has ended without errors.")
 
 
-async def is_game_over(context, players, lgs):
+async def is_game_over(context, players):
     if players == []:
         await context.send('Bah ils sont cons vos potes ils se sont crosskill ces abrutis')
         return False
@@ -630,7 +655,6 @@ async def is_game_over(context, players, lgs):
         await context.send(f"# Victoire du **Village** !")
     elif first_team == 'LG':
         await context.send(f"# Victoire des **Loups-Garous** !")
-
     return False
 
 
