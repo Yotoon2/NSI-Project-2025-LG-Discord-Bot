@@ -51,7 +51,7 @@ async def user_to_player(user, players: list):
         if player.name == str(user):
             return player
 
-
+@commands.has_permissions(administrator=True)
 @bot.command(aliases=["compo"])
 async def composition(context, nb_players: int, *, compo: literal_eval = []):
     """Commande pour afficher ou changer une composition de rôles"""
@@ -143,7 +143,7 @@ async def create_channel_mort(context, name:str):
     overwrites = {guild.default_role: discord.PermissionOverwrite(read_messages = False, send_messages=False),
                   guild.get_role(role_mort_id): discord.PermissionOverwrite(read_messages = True, send_messages = True)}
     channel = await cat.create_text_channel(name=name, overwrites=overwrites , position=pos_channel)
-    with open("compos\role_mort_id.txt", "w") as f:
+    with open("compos/role_mort_id.txt", "w") as f:
         f.write(str(role_mort_id))
         f.close()
 
@@ -438,7 +438,7 @@ async def annonce_jour(context, cible_lg=None, cible_soso=None, players=[], cupi
     if morts == []: #cas où personne n'a été ciblé
         await context.send(content=f"Personne n'est mort cette nuit.")
     else: #cas où au moins une personne a été ciblée
-        with open("compos\role_mort_id.txt", "r") as f:
+        with open("compos/role_mort_id.txt", "r") as f:
             guild = context.guild
             role_mort_id = int(f.read())
             for mort in morts:
@@ -465,7 +465,7 @@ async def nom_façade(context, lgs):
         noms.remove(nom)
         dico_lg[lg.name] = nom
 
-
+@commands.has_permissions(administrator=True)
 @bot.command()
 async def start(context):
     """Starts the game"""
@@ -671,6 +671,7 @@ async def on_typing(context, user, when): #night timer
         night = Timer(context, temps)
         await night.night_timer()
 
+@commands.has_permissions(administrator=True)
 @bot.command(aliases=["ct", "cleart", "clear"])
 async def clear_threads(context):
     print("Clearing Threads...")
@@ -699,11 +700,11 @@ async def clear_threads(context):
 
 
 
-
+@commands.has_permissions(administrator=True)
 @bot.command()
 async def mut(context, member: discord.Member):
     await member.edit(mute=True)
-
+@commands.has_permissions(administrator=True)
 @bot.command(pass_context = True)
 async def mute(ctx, member: discord.Member):
     if ctx.message.author.server_permissions.administrator:
