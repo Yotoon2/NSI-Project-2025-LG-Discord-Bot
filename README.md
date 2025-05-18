@@ -17,9 +17,9 @@ Préfix par défaut: "**!**"
 
 
 ## Roles:
-Simple Villageois
-Voyante
-Sorciere
-Cupidon
-Petite Fille
-Loup Garou
+Simple Villageois,
+Voyante,
+Sorciere,
+Cupidon,
+Petite Fille,
+Loup Garou.
