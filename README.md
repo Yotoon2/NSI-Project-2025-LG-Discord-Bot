@@ -17,7 +17,7 @@ composition {int /AND/ class type: list} - Permet à l'utilisateur de changer la
 
 
 ## Roles:
-Simple Villageois
+Simple Villageois \n
 Voyante
 Sorciere
 Cupidon
