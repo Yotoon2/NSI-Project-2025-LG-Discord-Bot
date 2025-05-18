@@ -1,4 +1,3 @@
-from threading import main_thread
 
 import discord
 from discord.ext import commands, tasks
@@ -122,18 +121,28 @@ async def thread(context, name: str):
     threads[f'{name.lower()}_thread'] = thread.id  # Stocker l'ID du thread dans le dictionnaire
     return thread.id
 
-async def create_channel(context, name:str):
-    """Créé un channel privé et renvoie son ID"""
+async def create_channel_mort(context, name:str):
+    """Créé le channel mort privé et renvoie son ID"""
     cat = context.category
-    pos = context.position
+    pos_channel = context.position
     guild = context.guild
-    role_mort = guild.get_role(1372099519944069210)
-    print(role_mort)
+    role_mort_id = None
+    print(guild.roles)
+    for role in guild.roles:
+        print(role)
+        if role.name == "Morts":
+            print(role.name)
+            role_mort_id = role.id
+            print(role_mort_id)
+            print("break")
+            break
+    print(role_mort_id)
+    if role_mort_id == None:
+        role_mort = await guild.create_role(name="Morts", colour=0x010000)
+        role_mort_id = role_mort.id
     overwrites = {guild.default_role: discord.PermissionOverwrite(read_messages = False, send_messages=False),
-                  guild.get_role(1372099519944069210): discord.PermissionOverwrite(read_messages = True, send_messages = True)}
-    channel = await cat.create_text_channel(name=name, overwrites=overwrites , position=pos)
-    print(channel)
-    print(type(channel))
+                  guild.get_role(role_mort_id): discord.PermissionOverwrite(read_messages = True, send_messages = True)}
+    channel = await cat.create_text_channel(name=name, overwrites=overwrites , position=pos_channel)
 
 
 
@@ -459,7 +468,7 @@ async def start(context):
     pf_thread = await thread(context, "Petite Fille") #créé thread privé de la PF
     soso_thread = await thread(context, "Sorcière")  # créé thread privé de la sorciere
     couple_thread = await thread(context, "Couple")
-    channel_morts = await create_channel(context.channel, "Morts")
+    channel_morts = await create_channel_mort(context.channel, "Morts")
     print(threads)
 
     channel = context
@@ -633,7 +642,7 @@ async def on_typing(context, user, when): #night timer
         with open("counter.txt", "r") as f:
             counter = f.read()
             print(counter)
-            temps = int(counter) * 12.5
+            temps = int(counter) * 13
             f.close()
         night = Timer(context, temps)
         await night.night_timer()
