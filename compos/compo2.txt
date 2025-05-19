@@ -1,1 +1,1 @@
-['Petite Fille', 'Loup Garou']
+['Simple Villageois', 'Loup Garou']

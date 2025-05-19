@@ -399,7 +399,7 @@ async def ping_couple(couple_chat, select_love):
 
 async def annonce_jour(context, cible_lg=None, cible_soso=None, players=[], cupidon=None):
     morts = []
-    if cible_lg is not None: #cible lg existe
+    if cible_lg is not None and cible_lg in players: #cible lg existe
         print(cible_lg)
         cible_lg.state = False
         morts.append(cible_lg)
@@ -418,7 +418,7 @@ async def annonce_jour(context, cible_lg=None, cible_soso=None, players=[], cupi
             players.remove(cible_lg.amour)
             cupidon.camp = 'Village'
 
-    if cible_soso is not None: #cible soso existe
+    if cible_soso is not None and cible_soso in players: #cible soso existe
         cible_soso.state = False
         morts.append(cible_soso)
         await context.send(content=f"<@{cible_soso.id}> s'est fait tué(e) par la sorcière cette nuit.")
@@ -429,7 +429,7 @@ async def annonce_jour(context, cible_lg=None, cible_soso=None, players=[], cupi
         if cible_soso.amour is not None:
             cible_soso.amour.state = False
             morts.append(cible_soso.amour)
-            await context.send(content=f"<@{cible_soso.amour} est mort par chagrin d'amour")
+            await context.send(content=f"<@{cible_soso.amour.id}> est mort par chagrin d'amour.")
             await asyncio.sleep(2)
             await context.send(content=f"Il était **{cible_soso.amour.role}**")
             await cible_soso.amour.member.edit(mute=True)
@@ -656,7 +656,6 @@ async def is_game_over(context, players):
     elif first_team == 'LG':
         await context.send(f"# Victoire des **Loups-Garous** !")
     return False
-
 
 
 @bot.event
