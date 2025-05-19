@@ -659,7 +659,6 @@ async def start(context):
             for role in mort.member.roles:
                 print(f'role: {role.id}')
                 if role == role_mort:
-                    print(f'Niga : {role}')
                     await mort.member.remove_roles(role_mort)
 
         f.close()
