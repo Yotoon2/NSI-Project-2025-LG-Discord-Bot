@@ -132,17 +132,22 @@ async def create_channel_mort(context, name:str):
         print(role)
         if role.name == "Morts":
             print(role.name)
+            role_mort = role
             role_mort_id = role.id
-            print(role_mort_id)
-            print("break")
+            print("break boucle role mort")
             break
     print(role_mort_id)
     if role_mort_id == None:
         role_mort = await guild.create_role(name="Morts", colour=0x010000)
         role_mort_id = role_mort.id
+
     overwrites = {guild.default_role: discord.PermissionOverwrite(read_messages = False, send_messages=False),
                   guild.get_role(role_mort_id): discord.PermissionOverwrite(read_messages = True, send_messages = True)}
     channel = await cat.create_text_channel(name=name, overwrites=overwrites , position=pos_channel)
+
+    for i in range(len(guild.categories)):
+        await guild.categories[i].set_permissions(role_mort, read_messages=True, send_messages=False, send_messages_in_threads=False)
+
     with open("compos/role_mort_id.txt", "w") as f:
         f.write(str(role_mort_id))
         f.close()
@@ -177,9 +182,7 @@ async def action_cupidon(context, cupi_chat, cupidon, players: list, dico: dict,
     elif cupidon.state == False:
         print("Le cupidon est mort")
     else:
-        await context.send("C'est au tour du **Cupidon**")
-        cupi_channel = bot.get_channel(threads.get('cupidon_thread'))
-        await cupi_channel.send(f"**C'est au tour du Cupidon**")
+        await context.send("C'est au tour du **Cupidon**.")
         print('cupi')
         message_menu, affichage_menu = await cupi_menu(cupi_chat, players, dico,
                                             text="Choisissez les deux joueurs qui deviendront les membres du couple. Si vous ne choisissez pas, il sera choisi aléatoirement.")
@@ -405,15 +408,15 @@ async def annonce_jour(context, cible_lg=None, cible_soso=None, players=[], cupi
         morts.append(cible_lg)
         await context.send(content=f"<@{cible_lg.id}> s'est fait dévoré(e) par les loups cette nuit.")
         await asyncio.sleep(2)
-        await context.send(content=f"Il était **{cible_lg.role}**")
+        await context.send(content=f"Il était **{cible_lg.role}**.")
         await cible_lg.member.edit(mute=True)
         players.remove(cible_lg)
         if cible_lg.amour is not None:
             cible_lg.amour.state = False
             morts.append(cible_lg.amour)
-            await context.send(content=f"<@{cible_lg.amour.id}> est mort par chagrin d'amour")
+            await context.send(content=f"<@{cible_lg.amour.id}> est mort par chagrin d'amour.")
             await asyncio.sleep(2)
-            await context.send(content=f"Il était **{cible_lg.amour.role}**")
+            await context.send(content=f"Il était **{cible_lg.amour.role}**.")
             await cible_lg.amour.member.edit(mute=True)
             players.remove(cible_lg.amour)
             cupidon.camp = 'Village'
@@ -423,7 +426,7 @@ async def annonce_jour(context, cible_lg=None, cible_soso=None, players=[], cupi
         morts.append(cible_soso)
         await context.send(content=f"<@{cible_soso.id}> s'est fait tué(e) par la sorcière cette nuit.")
         await asyncio.sleep(2)
-        await context.send(content=f"Il était **{cible_soso.role}**")
+        await context.send(content=f"Il était **{cible_soso.role}**.")
         await cible_soso.member.edit(mute=True)
         players.remove(cible_soso)
         if cible_soso.amour is not None:
@@ -431,7 +434,7 @@ async def annonce_jour(context, cible_lg=None, cible_soso=None, players=[], cupi
             morts.append(cible_soso.amour)
             await context.send(content=f"<@{cible_soso.amour.id}> est mort par chagrin d'amour.")
             await asyncio.sleep(2)
-            await context.send(content=f"Il était **{cible_soso.amour.role}**")
+            await context.send(content=f"Il était **{cible_soso.amour.role}**.")
             await cible_soso.amour.member.edit(mute=True)
             players.remove(cible_soso.amour)
             cupidon.camp = 'Village'
@@ -441,9 +444,12 @@ async def annonce_jour(context, cible_lg=None, cible_soso=None, players=[], cupi
         with open("compos/role_mort_id.txt", "r") as f:
             guild = context.guild
             role_mort_id = int(f.read())
+            role_mort = guild.get_role(role_mort_id)
+            print(morts)
             for mort in morts:
-                await mort.member.edit(mute=True, roles=mort.member.roles+[guild.get_role(role_mort_id)])
+                print(mort)
                 print(f"liste_roles_mort: {mort.member.roles}")
+                await mort.member.edit(mute=True, roles=mort.member.roles+[role_mort])
     return morts
 
 #endroit
@@ -521,13 +527,13 @@ async def start(context):
         await call(role_chats[i], roles_nuit[i]) #ajoute les roles a leur thread
 
     #DEPART DU JEU
-    start = Timer(context, 2, None)
+    start = Timer(context, 5, None)
     await start.start_timer() # compteur de départ
 
     n_jours = 1
     potion_vie = True
     potion_mort = True
-    temps_discussion = 12
+    temps_discussion = 25
     temps_nuit(cupidon, voyante, lgs, sorciere, n_jours)
     await asyncio.sleep(1)
 
@@ -540,6 +546,7 @@ async def start(context):
     await asyncio.sleep(1)
 
     #NUIT
+    await mute_all(context, players)
     await context.send(content=f"# Nuit {n_jours}")
     await context.edit(locked=True) #lock le chat du village pour la nuit
     await asyncio.sleep(1)
@@ -547,7 +554,7 @@ async def start(context):
     await asyncio.sleep(1)
 
     #CUPIDON
-    select_love = await action_cupidon(channel, cupi_chat, cupidon, players, dico_players, n_jours) #renvoie l'objet de la class selectviewcupi
+    select_love = await action_cupidon(context, cupi_chat, cupidon, players, dico_players, n_jours) #renvoie l'objet de la class selectviewcupi
     await cupi_chat.edit(locked=True)
     await ping_couple(couple_chat, select_love)
 
@@ -570,12 +577,15 @@ async def start(context):
     await soso_chat.edit(locked=True)
 
     #ANNONCE DES MORTS ET DIVERS
+    await unmute_all(context, players)
+    await asyncio.sleep(1)
     morts += await annonce_jour(context, cible_lg, cible_soso, players, cupidon)
     if cible_vovo is not None:
         await vovo_chat.send(f"La personne que vous avez espionné est **{cible_vovo.role}**.")
 
     n_jours += 1
     game_state = await is_game_over(context, players)  # True = le jeu est en cours, False = le jeu est fini
+
     #BOUCLE DE JEU
     print(f'Mort :{morts}')
     while game_state == True:
@@ -600,6 +610,7 @@ async def start(context):
             break
 
         #NUIT
+        await mute_all(context, players)
         await context.send(content=f"# Nuit {n_jours}")
         await context.edit(locked=True) #lock le chat du village pour la nuit
         await asyncio.sleep(1)
@@ -625,6 +636,8 @@ async def start(context):
         await soso_chat.edit(locked=True)
 
         #ANNONCE DES MORTS
+        await unmute_all(context, players)
+        await asyncio.sleep(1)
         morts += await annonce_jour(context, cible_lg, cible_soso, players, cupidon)
         if cible_vovo is not None:
             await vovo_chat.send(f"La personne que vous avez espionné est **{cible_vovo.role}**.")
@@ -633,11 +646,23 @@ async def start(context):
         game_state = await is_game_over(context, players)
         n_jours += 1
         print(f'Mort :{morts}')
-    for mort in morts:
-        await mort.member.edit(mute=False)
-        for i in range(len(mort.member.roles)):
-            if mort.member.roles[i].name == "Morts":
-                mort.member.roles.pop(i)
+    await unmute_all(context, morts)
+    with open("compos/role_mort_id.txt", "r") as f:
+        guild = context.guild
+        role_mort = guild.get_role(int(f.read()))
+        print(f"role mort: {role_mort}")
+        print(f"morts: {morts}")
+
+        for mort in morts:
+            print(f"mort: {mort}")
+            print(f"mort_member_roles: {mort.member.roles}")
+            for role in mort.member.roles:
+                print(f'role: {role.id}')
+                if role == role_mort:
+                    print(f'Niga : {role}')
+                    await mort.member.remove_roles(role_mort)
+
+        f.close()
     print("Program has ended without errors.")
 
 
@@ -699,21 +724,14 @@ async def clear_threads(context):
 
 
 
-@commands.has_permissions(administrator=True)
-@bot.command()
-async def mut(context, member: discord.Member):
-    await member.edit(mute=True)
-@commands.has_permissions(administrator=True)
-@bot.command(pass_context = True)
-async def mute(ctx, member: discord.Member):
-    if ctx.message.author.server_permissions.administrator:
-        role = discord.utils.get(member.server.roles, name='Muted')
-        await ctx.add_roles(member, role)
-        embed=discord.Embed(title="User Muted!", description="**{0}** was muted by **{1}**!".format(member, ctx.message.author), color=0xff00f6)
-        await ctx.send(embed=embed)
-    else:
-        embed=discord.Embed(title="Permission Denied.", description="You don't have permission to use this command.", color=0xff00f6)
-        await ctx.send(embed=embed)
+async def mute_all(context, players: list):
+    for player in players:
+        await player.member.edit(mute=True)
+
+
+async def unmute_all(context, players: list):
+    for player in players:
+        await player.member.edit(mute=False)
 
 @bot.event
 async def on_message(message):
