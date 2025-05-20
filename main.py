@@ -163,9 +163,7 @@ def temps_nuit(cupidon, voyante, lgs, sorciere, n_nuits):
 
 
 async def action_cupidon(context, cupi_chat, cupidon, players: list, dico: dict, n_nuits):
-    if cupidon == None:
-    elif cupidon.state == False:
-    else:
+    if cupidon is not None and cupidon.state == True:
         await context.send("C'est au tour du **Cupidon**.")
         message_menu, affichage_menu = await cupi_menu(cupi_chat, players, dico,
                                             text="Choisissez les deux joueurs qui deviendront les membres du couple. Si vous ne choisissez pas, il sera choisi aléatoirement.")
@@ -186,9 +184,7 @@ async def action_cupidon(context, cupi_chat, cupidon, players: list, dico: dict,
         return affichage_menu.selectlove
 
 async def action_voyante(context, vovo_chat, voyante, players, n_nuits):
-    if voyante == None:
-    elif voyante.state == False:
-    else:
+    if voyante != None and voyante.sate == True:
         await context.send("C'est au tour de la **Voyante**.")
         bdc = await menu(vovo_chat, players,"Choisissez la personne dont vous voulez révéler le rôle.", voyante)
         await vovo_chat.edit(locked=False)
