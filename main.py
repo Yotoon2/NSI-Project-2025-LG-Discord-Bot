@@ -198,8 +198,7 @@ async def action_lg(context, lg_chat, lgs, players, n_nuits):
     for lg in lgs:
         if lg.state == False:
             counter -= 1
-    if counter == 0:
-    else:
+    if counter >= 1:
         await context.send("C'est au tour des **Loups-Garous**.")
         kill_menu = await menu(lg_chat, players,"Choisissez la personne que vous voulez dévorer.", lgs[0])
         await lg_chat.edit(locked=False)
