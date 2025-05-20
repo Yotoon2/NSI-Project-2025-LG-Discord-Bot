@@ -1,4 +1,3 @@
-
 import discord
 from discord.ext import commands, tasks
 import asyncio
@@ -22,25 +21,20 @@ dico_lg = {}
 
 # @bot.command() # Create a slash command
 async def button(context, potion_vie, cible_lg):
-    print('button')
     bouton_soso = ButtonMenu(potion_vie=potion_vie, cible_lg=cible_lg)
     potion_vie = await context.send(content=f"**{cible_lg.name}** est visé(e) par les loups-garous ce soir.",
                                     view=bouton_soso) # Send a message with our View class that contains the button
-    #print(bouton_soso.button_callback1)
-    print(f'fonction bouton : {bouton_soso.cible_lg}, reste :')
     potion_vie = bouton_soso.potion_vie
     return bouton_soso
     #return potion_vie
 
 async def menu(context, players: list, text: str, player=None): #Select est la classe a afficher, player est le joueur avec un role qui agit de nuit s'il y en a un
     """fonction pour menu deroulant"""
-    print("appelle menu")
     vote_menu = await context.send(content=text, view=SelectView(players=players, player=player))
     return vote_menu
 
 async def cupi_menu(context, players: list, dico, text: str):
     """fonction pour menu deroulant du cupi"""
-    print("appelle menu cupi")
     menu_cupi = SelectViewCupi(players=players, dico=dico)
     message_menu = await context.send(content=text, view=menu_cupi)
     return message_menu, menu_cupi
@@ -95,9 +89,6 @@ async def role_assign(context, nb_players, members: literal_eval):
             liste.append(Player(member.name, member.id, role, True, member=member, camp="Couple"))
         else:
             liste.append(Player(member.name, member.id, role, True, member=member, camp="Village"))
-
-
-    # print(f"liste_player: {liste[0].name}")
     return liste
 
 
@@ -127,16 +118,11 @@ async def create_channel_mort(context, name:str):
     pos_channel = context.position
     guild = context.guild
     role_mort_id = None
-    print(guild.roles)
     for role in guild.roles:
-        print(role)
         if role.name == "Morts":
-            print(role.name)
             role_mort = role
             role_mort_id = role.id
-            print("break boucle role mort")
             break
-    print(role_mort_id)
     if role_mort_id == None:
         role_mort = await guild.create_role(name="Morts", colour=0x010000)
         role_mort_id = role_mort.id
@@ -178,12 +164,9 @@ def temps_nuit(cupidon, voyante, lgs, sorciere, n_nuits):
 
 async def action_cupidon(context, cupi_chat, cupidon, players: list, dico: dict, n_nuits):
     if cupidon == None:
-        print("Il n'y a pas de cupidon dans la partie")
     elif cupidon.state == False:
-        print("Le cupidon est mort")
     else:
         await context.send("C'est au tour du **Cupidon**.")
-        print('cupi')
         message_menu, affichage_menu = await cupi_menu(cupi_chat, players, dico,
                                             text="Choisissez les deux joueurs qui deviendront les membres du couple. Si vous ne choisissez pas, il sera choisi aléatoirement.")
         await cupi_chat.edit(locked=False)
@@ -191,7 +174,6 @@ async def action_cupidon(context, cupi_chat, cupidon, players: list, dico: dict,
         cupi_timer = Timer(cupi_chat, 10, n_nuits)
         await cupi_timer.role_timer()
         await message_menu.delete()
-        print(f'Couple sélectionné : {affichage_menu.selectlove.couple}')
 
         if affichage_menu.selectlove.couple == []:
             random_choice = []
@@ -201,18 +183,13 @@ async def action_cupidon(context, cupi_chat, cupidon, players: list, dico: dict,
                 amoureux = random.choice(random_choice)
                 affichage_menu.selectlove.couple.append(amoureux)
                 random_choice.remove(amoureux)
-            print(f'SelectMenu None : {affichage_menu.selectlove.couple}')
-
         return affichage_menu.selectlove
 
 async def action_voyante(context, vovo_chat, voyante, players, n_nuits):
     if voyante == None:
-        print("Il n'y a pas de voyante dans la partie")
     elif voyante.state == False:
-        print("La voyante est morte")
     else:
         await context.send("C'est au tour de la **Voyante**.")
-        print("vovo")
         bdc = await menu(vovo_chat, players,"Choisissez la personne dont vous voulez révéler le rôle.", voyante)
         await vovo_chat.edit(locked=False)
         #await context.channel.set_permissions(voyante.member, send_messages_in_threads=False)
@@ -226,10 +203,8 @@ async def action_lg(context, lg_chat, lgs, players, n_nuits):
         if lg.state == False:
             counter -= 1
     if counter == 0:
-        print("Aucun LG en vie")
     else:
         await context.send("C'est au tour des **Loups-Garous**.")
-        print("lgs")
         kill_menu = await menu(lg_chat, players,"Choisissez la personne que vous voulez dévorer.", lgs[0])
         await lg_chat.edit(locked=False)
         lg_timer = Timer(lg_chat, 10, n_nuits)
@@ -241,34 +216,26 @@ async def action_sorciere(context, soso_chat, sorciere, players, n_nuits, potion
     pdv_menu = None
     cible_soso = None
     if sorciere == None:
-        print("Il n'y a pas de sorcière dans la partie")
         return cible_lg, potion_vie, potion_mort, cible_soso
     elif sorciere.state == False:
-        print("La sorcière est morte")
         return cible_lg, potion_vie, potion_mort, cible_soso
     else:
         await context.send("C'est au tour de la **Sorcière**.")
-        print("soso")
         if cible_lg is None:
             await soso_chat.send(f"Aucune personne n'a été ciblé ce soir.")
-            print("pas de cible lg")
         else:
             if potion_vie == False:  # potion vie deja utilisé
-                print("plus de potion de vie")
                 pdv_menu = None
                 await soso_chat.send(content=f"Vous avez déjà utilisé la potion de vie.")
 
             else: #potion vie pas encore utilisé
                 pdv_menu = await button(context=soso_chat, potion_vie=potion_vie, cible_lg=cible_lg)
-                print(pdv_menu.cible_lg)
 
         if potion_mort == False: #potion mort deja utilisé
-            print("plus de potion de mort")
             pdm_menu = 0
             await soso_chat.send(content=f"Vous avez déjà utilisé la potion de mort.")
         else: #potion mort pas encore utilisé
             pdm_menu = await menu(soso_chat, players, "Selectionnez la personne qui recevra la potion de mort.", sorciere) #potion de mort
-            print("pdm")
 
             await soso_chat.edit(locked=False)
             # await context.channel.set_permissions(sorciere.member, send_messages_in_threads=False)
@@ -277,7 +244,6 @@ async def action_sorciere(context, soso_chat, sorciere, players, n_nuits, potion
             cible_soso = await cible_vote(soso_chat, players, sorciere, potion_mort)
             if pdv_menu is None and cible_soso is not None:
                 del pdm_menu
-                print(cible_soso)
                 return cible_lg, potion_vie, False, cible_soso
             elif pdv_menu is not None and cible_soso is not None:
                 cible_lg, potion_vie = pdv_menu.cible_lg, pdv_menu.potion_vie
@@ -393,17 +359,13 @@ async def ping_couple(couple_chat, select_love):
         select_love.couple[1].amour = select_love.couple[0]
         select_love.couple[1].camp = 'Couple'
         for i in range(2):
-            print(select_love.couple)
             await call(couple_chat, select_love.couple[i])
-        print(f'Amour 1 : {select_love.couple[0].amour}')
-        print(f'Amour 2 : {select_love.couple[1].amour}')
         await couple_chat.send(content=f"Le **Cupidon**, vous a choisi pour son **Couple**, vous avez accès à ce chat privé afin de communiquer jour comme nuit.")
 
 
 async def annonce_jour(context, cible_lg=None, cible_soso=None, players=[], cupidon=None):
     morts = []
     if cible_lg is not None and cible_lg in players: #cible lg existe
-        print(cible_lg)
         cible_lg.state = False
         morts.append(cible_lg)
         await context.send(content=f"<@{cible_lg.id}> s'est fait dévoré(e) par les loups cette nuit.")
@@ -445,10 +407,7 @@ async def annonce_jour(context, cible_lg=None, cible_soso=None, players=[], cupi
             guild = context.guild
             role_mort_id = int(f.read())
             role_mort = guild.get_role(role_mort_id)
-            print(morts)
             for mort in morts:
-                print(mort)
-                print(f"liste_roles_mort: {mort.member.roles}")
                 await mort.member.edit(mute=True, roles=mort.member.roles+[role_mort])
     return morts
 
@@ -475,7 +434,6 @@ async def nom_façade(context, lgs):
 @bot.command()
 async def start(context):
     """Starts the game"""
-    print("Starting...")
     dico_lg = {}
     morts = []
     await clear_threads(context)
@@ -490,8 +448,6 @@ async def start(context):
     soso_thread = await thread(context, "Sorcière")  # créé thread privé de la sorciere
     couple_thread = await thread(context, "Couple")
     channel_mort = await create_channel_mort(context.channel, "Morts")
-    print(threads)
-
     channel = context
     context = bot.get_channel(main_thread) #changement de context: channel -> thread
     players = await role_assign(context, n_players, vc) #liste de joueur de type class Player
@@ -587,7 +543,6 @@ async def start(context):
     game_state = await is_game_over(context, players)  # True = le jeu est en cours, False = le jeu est fini
 
     #BOUCLE DE JEU
-    print(f'Mort :{morts}')
     while game_state == True:
         temps_nuit(cupidon, voyante, lgs, sorciere, n_jours)
         #DISCUSSION
@@ -645,19 +600,13 @@ async def start(context):
 
         game_state = await is_game_over(context, players)
         n_jours += 1
-        print(f'Mort :{morts}')
     await unmute_all(context, morts)
     with open("compos/role_mort_id.txt", "r") as f:
         guild = context.guild
         role_mort = guild.get_role(int(f.read()))
-        print(f"role mort: {role_mort}")
-        print(f"morts: {morts}")
 
         for mort in morts:
-            print(f"mort: {mort}")
-            print(f"mort_member_roles: {mort.member.roles}")
             for role in mort.member.roles:
-                print(f'role: {role.id}')
                 if role == role_mort:
                     await mort.member.remove_roles(role_mort)
 
@@ -688,7 +637,6 @@ async def on_typing(context, user, when): #night timer
     if user.id == bot_id:
         with open("counter.txt", "r") as f:
             counter = f.read()
-            print(counter)
             temps = int(counter) * 13
             f.close()
         night = Timer(context, temps)
@@ -707,7 +655,6 @@ async def clear_threads(context):
     with open("counter.txt", "w") as f: #compteur nuit
         f.write("0")
         f.close()
-    print(l_threads)
     for thread in l_threads:
         try:
             print(f"Deleting thread: {thread.name} (ID: {thread.id})")
@@ -746,7 +693,6 @@ async def on_message(message):
     if message.channel.id == threads['loups-garous_thread']:
         # Retransmettre le message dans le thread "pf"
         pf_channel = bot.get_channel(threads.get('petite fille_thread'))
-        print(pf_channel)
         if pf_channel:
             await pf_channel.send(f"**{dico_lg[message.author.name]}**: \n {message.content} \n ‎ ")
 
