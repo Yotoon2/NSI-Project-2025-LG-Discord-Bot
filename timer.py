@@ -46,6 +46,7 @@ class Timer():
             await msg.edit(content=f"Il vous reste **{self.time - 1 - i}** secondes pour voter.")
         await msg.delete()
         await vote_menu.delete()
+        await asyncio.sleep(1)
         await self.context.send(content=f"La phase de vote est terminée.")
         await asyncio.sleep(1)
 

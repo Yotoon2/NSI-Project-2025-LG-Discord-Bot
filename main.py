@@ -28,9 +28,9 @@ async def button(context, potion_vie, cible_lg):
     return bouton_soso
     #return potion_vie
 
-async def menu(context, players: list, text: str, player=None): #Select est la classe a afficher, player est le joueur avec un role qui agit de nuit s'il y en a un
+async def menu(context, players: list, text: str, dico_players: dict, player=None): #Select est la classe a afficher, player est le joueur avec un role qui agit de nuit s'il y en a un
     """fonction pour menu deroulant"""
-    vote_menu = await context.send(content=text, view=SelectView(players=players, player=player))
+    vote_menu = await context.send(content=text, view=SelectView(players=players, player=player, dico_players=dico_players))
     return vote_menu
 
 async def cupi_menu(context, players: list, dico, text: str):
@@ -186,21 +186,21 @@ async def action_cupidon(context, cupi_chat, cupidon, players: list, dico: dict,
 async def action_voyante(context, vovo_chat, voyante, players, n_nuits):
     if voyante != None and voyante.sate == True:
         await context.send("C'est au tour de la **Voyante**.")
-        bdc = await menu(vovo_chat, players,"Choisissez la personne dont vous voulez révéler le rôle.", voyante)
+        bdc = await menu(vovo_chat, players,"Choisissez la personne dont vous voulez révéler le rôle.", dico_players, voyante)
         await vovo_chat.edit(locked=False)
         #await context.channel.set_permissions(voyante.member, send_messages_in_threads=False)
         vovo_timer = Timer(vovo_chat, 10, n_nuits)
         await vovo_timer.role_timer()
         await bdc.delete()
 
-async def action_lg(context, lg_chat, lgs, players, n_nuits):
+async def action_lg(context, lg_chat, lgs, players, n_nuits, dico_players):
     counter = len(lgs)
     for lg in lgs:
         if lg.state == False:
             counter -= 1
     if counter >= 1:
         await context.send("C'est au tour des **Loups-Garous**.")
-        kill_menu = await menu(lg_chat, players,"Choisissez la personne que vous voulez dévorer.", lgs[0])
+        kill_menu = await menu(lg_chat, players,"Choisissez la personne que vous voulez dévorer.", dico_players, lgs[0])
         await lg_chat.edit(locked=False)
         lg_timer = Timer(lg_chat, 10, n_nuits)
         await lg_timer.role_timer()
@@ -230,7 +230,7 @@ async def action_sorciere(context, soso_chat, sorciere, players, n_nuits, potion
             pdm_menu = 0
             await soso_chat.send(content=f"Vous avez déjà utilisé la potion de mort.")
         else: #potion mort pas encore utilisé
-            pdm_menu = await menu(soso_chat, players, "Selectionnez la personne qui recevra la potion de mort.", sorciere) #potion de mort
+            pdm_menu = await menu(soso_chat, players, "Selectionnez la personne qui recevra la potion de mort.", dico_players, sorciere) #potion de mort
 
             await soso_chat.edit(locked=False)
             # await context.channel.set_permissions(sorciere.member, send_messages_in_threads=False)
@@ -276,8 +276,8 @@ def maxi_vote(players: list):
     return maxi
 
 
-async def cible_vote(context, players, voteur, potion_mort):
-    """annonce les résultats des votes ou renvoie la cible selon les cas"""
+async def cible_vote(context, players, voteur, potion_mort, cupidon):
+    """renvoie la cible du vote"""
     cible = []
     maxi = maxi_vote(players)
     counter = 0
@@ -288,13 +288,14 @@ async def cible_vote(context, players, voteur, potion_mort):
 
     if maxi == 0: #aucun vote
         if voteur == None:
-            await context.send(content=f"Le village a décidé de ne pas voter.")
+            await context.send(content=f"Le **Village** a décidé de ne pas voter.")
+            return []
         elif type(voteur) == list:  # LG
             await context.send(content=f"Vous avez décidé de ne rien faire cette nuit.")
-        elif voteur.role == "Voyante":
+        elif voteur.role == "Voyante" and voteur.state == True:
             await context.send(content=f"Vous avez décidé de ne rien faire cette nuit.")
             return None
-        elif voteur.role == "Sorciere" and potion_mort == True:
+        elif voteur.role == "Sorciere" and potion_mort == True and voteur.state == True:
             await context.send(content=f"Vous avez décidé conserver votre potion de mort pour une prochaine nuit.")
         elif voteur.role == "Cupidon":
             await context.send(content=f"Vous avez décidé de laisser le hasard choisir votre couple.")
@@ -321,7 +322,6 @@ async def cible_vote(context, players, voteur, potion_mort):
         elif voteur.role == "Cupidon":
             await context.send(content=f"Vous n'avez choisi qu'une personne (**{cible[0].name}**), la seconde sera choisi aléatoirement")
             return cible[0] #une des deux personnes du couple
-
 
     else: #égalité
         if voteur == None:

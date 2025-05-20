@@ -17,7 +17,7 @@ class SelectLove(discord.ui.Select):
         await interaction.response.defer()
         choice = self.values[0] # type str
         print(f"valeur1: {choice}, valeur2: {self.values[1]}")
-        voteur = await user_to_player(interaction.user, self.players)  # type player
+        voteur = self.dico[interaction.user.name]
         personne_votee = self.dico[choice]
         print(personne_votee)
         await self.sys_vote(interaction, choice, personne_votee, voteur)
