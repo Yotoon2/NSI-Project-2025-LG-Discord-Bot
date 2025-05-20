@@ -10,7 +10,7 @@ from cupi_select import SelectViewCupi, SelectLove
 from player import Player
 from button_menu import ButtonMenu
 
-token = 'MTM1OTUxODk0OTA0MTExNTMyMA.GWVATN.B_qihYlFhcYWxI0NMrTVE-sI7-eDvQEKZgz6nM'
+token = 'INSERT YOUR TOKEN'
 
 intents = discord.Intents.all()
 bot = commands.Bot(command_prefix='!', intents=intents)
