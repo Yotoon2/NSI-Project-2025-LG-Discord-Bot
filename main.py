@@ -184,7 +184,7 @@ async def action_cupidon(context, cupi_chat, cupidon, players: list, dico: dict,
         return affichage_menu.selectlove
 
 async def action_voyante(context, vovo_chat, voyante, players, n_nuits):
-    if voyante != None and voyante.sate == True:
+    if voyante != None and voyante.state == True:
         await context.send("C'est au tour de la **Voyante**.")
         bdc = await menu(vovo_chat, players,"Choisissez la personne dont vous voulez révéler le rôle.", voyante)
         await vovo_chat.edit(locked=False)
