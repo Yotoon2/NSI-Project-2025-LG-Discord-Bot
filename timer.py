@@ -36,11 +36,11 @@ class Timer():
         await msg.edit(content=f"## La phase de discussion est terminée.")
         await asyncio.sleep(1)
 
-    async def vote_village(self, players: list):
+    async def vote_village(self, players: list, dico_players: dict):
         """Timer de début de jour et de phase de discussion"""
         await self.context.send(f"Phase de vote")
         msg = await self.context.send(content=f"Il vous reste **{self.time}** secondes pour voter.")
-        vote_menu = await menu(self.context, players, "Vote du Jour")
+        vote_menu = await menu(self.context, players, text="Vote du Jour", dico_players=dico_players, player=None)
         for i in range(0, self.time):
             await asyncio.sleep(1)
             await msg.edit(content=f"Il vous reste **{self.time - 1 - i}** secondes pour voter.")
@@ -71,8 +71,8 @@ class Timer():
         await msg.delete()
         await self.context.send("## Le jour se lève.")
 
-async def menu(context, players: list, text: str, player=None): #Select est la classe a afficher, player est le joueur avec un role qui agit de nuit s'il y en a un
+async def menu(context, players: list, text: str, dico_players: dict, player=None): #Select est la classe a afficher, player est le joueur avec un role qui agit de nuit s'il y en a un
     """commande pour menu deroulant"""
     print("menu (appelle select view)")
-    vote_menu = await context.send(content=text, view=SelectView(players=players, player=player))
+    vote_menu = await context.send(content=text, view=SelectView(players=players, player=player, dico_players=dico_players))
     return vote_menu
