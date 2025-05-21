@@ -73,9 +73,5 @@ class SelectView(discord.ui.View):
         super().__init__(timeout=timeout)
         self.add_item(SelectVote(players, player, dico_players))
 
-async def user_to_player(user, players: list):
-    for player in players:
-        if player.name == str(user):
-            return player
 
 
