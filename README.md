@@ -9,7 +9,8 @@ Le programme require l'installation de discord.py :
 pip install discord.py
 ```
 Vous n'avez plus qu'à lancer le fichier main et le bot sera fonctionnel. 
-À noter que le bot a besoin des permissions d'administrateur pour fonctionner.
+
+**À noter que le bot a besoin des permissions d'administrateur pour fonctionner.**
 
 ## Commandes:
 
