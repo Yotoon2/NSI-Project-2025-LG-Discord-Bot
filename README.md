@@ -3,6 +3,7 @@
 Pour pouvoir utiliser le bot suivez ces étapes :
 
 Commencez par décompresser le fichier puis ouvrez le fichier main et insérez votre token (que vous pouvez récupérer en créant une application sur https://discord.com/developers/applications). 
+
 Le programme require l'installation de discord.py :
 ```
 pip install discord.py
