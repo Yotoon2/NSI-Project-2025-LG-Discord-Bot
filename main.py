@@ -1,5 +1,4 @@
 import discord
-from PIL.ImageOps import posterize
 from discord.ext import commands, tasks
 import asyncio
 import random
