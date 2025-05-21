@@ -81,7 +81,7 @@ async def role_assign(context, nb_players, members: literal_eval):
     for _ in range(len(members)):
         role = random.choice(roles)
         roles.remove(role)
-        member = random.choice(members)
+        member = members[0]
         members.remove(member)
         if role == "Loup Garou":
             liste.append(Player(member.name, member.id, role, True, member = member, camp="LG"))
@@ -404,7 +404,7 @@ async def annonce_jour(context, cible_lg=None, cible_soso=None, players=[], cupi
     if cible_lg is not None and cible_lg in players: #cible lg existe
         cible_lg.state = False
         morts.append(cible_lg)
-        print(f"<@{cible_lg.id}> s'est fait(e) dévoré(e) par les Loups cette nuit.")
+        print(f"<@{cible_lg.name}> s'est fait(e) dévoré(e) par les Loups cette nuit.")
         await context.send(content=f"<@{cible_lg.id}> est mort(e) cette nuit.")
         await asyncio.sleep(2)
         await context.send(content=f"Il était **{cible_lg.role}**.")
@@ -429,7 +429,7 @@ async def annonce_jour(context, cible_lg=None, cible_soso=None, players=[], cupi
     if cible_soso is not None and cible_soso in players: #cible soso existe
         cible_soso.state = False
         morts.append(cible_soso)
-        print(f"<@{cible_soso.id}> s'est fait tué(e) par la sorcière cette nuit.")
+        print(f"<@{cible_soso.name}> s'est fait tué(e) par la sorcière cette nuit.")
         await context.send(content=f"<@{cible_soso.id}> est mort(e) cette nuit.")
 
         await asyncio.sleep(2)
@@ -544,7 +544,7 @@ async def start(context):
     n_jours = 1
     potion_vie = True
     potion_mort = True
-    temps_discussion = 25
+    temps_discussion = 15
     temps_nuit(cupidon, voyante, lgs, sorciere, n_jours)
     await asyncio.sleep(1)
 
@@ -683,10 +683,19 @@ async def is_game_over(context, players):
             return True
     if first_team == 'Couple':
         await context.send(f"# Victoire du **Couple** !")
+        await context.send("## Gagnants:")
+        for gagnant in players:
+            await context.send(f"<@{gagnant.id}>")
     elif first_team == 'Village':
         await context.send(f"# Victoire du **Village** !")
+        await context.send("## Gagnants:")
+        for gagnant in players:
+            await context.send(f"<@{gagnant.id}>")
     elif first_team == 'LG':
         await context.send(f"# Victoire des **Loups-Garous** !")
+        await context.send("## Gagnants:")
+        for gagnant in players:
+            await context.send(f"<@{gagnant.id}>")
     return False
 
 
