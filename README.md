@@ -17,7 +17,10 @@ Vous n'avez plus qu'à lancer le fichier main et le bot sera fonctionnel.
 Préfix par défaut: "**!**"
 
 *start* - Permet de lancer la partie. Les joueurs seront ceux qui se trouveront dans le même channel vocal que celui qui à effectuer la commande.
-**ATTENTION!** Effectuer cette commande effacera tous les threads attachés au channel textuel dans lequel la commande a été envoyé. Si vous avez un channel nommé "Morts" il risque également d'être supprimé.
+
+**ATTENTION!** Effectuer cette commande effacera tous les threads attachés au channel textuel dans lequel la commande a été envoyé. 
+
+**ATTENTION!** Si vous avez un channel nommé "Morts" il risque également d'être supprimé.
 
 *composition* {**int**} - Permet d'afficher la composition des rôles pour un nombre de joueurs donnés. (6 < int < 12)
 (alias: *compo*)
@@ -32,4 +35,5 @@ Voyante,
 Sorciere,
 Cupidon,
 Petite Fille,
+Chasseur,
 Loup Garou.
