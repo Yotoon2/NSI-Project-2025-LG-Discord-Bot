@@ -162,7 +162,7 @@ def temps_nuit(cupidon, voyante, lgs, sorciere, n_nuits):
         f.close()
 
 
-async def action_cupidon(context, cupi_chat, cupidon, players: list, dico: dict, n_nuits, potion_mort):
+async def action_cupidon(context, cupi_chat, cupidon, players: list, dico: dict, n_nuits, potion_mort, dico_players):
     if cupidon is not None and cupidon.state == True:
         await context.send("C'est au tour du **Cupidon**.")
         message_menu, affichage_menu = await cupi_menu(cupi_chat, players, dico,
@@ -171,7 +171,7 @@ async def action_cupidon(context, cupi_chat, cupidon, players: list, dico: dict,
         #await context.channel.set_permissions(cupidon.member, send_messages_in_threads=False)
         cupi_timer = Timer(cupi_chat, 15, n_nuits)
         await cupi_timer.role_timer()
-        await cible_vote(cupi_chat, players, cupidon, potion_mort, cupidon)
+        await cible_vote(cupi_chat, players, cupidon, potion_mort, cupidon, dico_players, n_nuits)
         await message_menu.delete()
 
         if affichage_menu.selectlove.couple == []:
@@ -239,7 +239,7 @@ async def action_sorciere(context, soso_chat, sorciere, players, n_nuits, potion
         await soso_chat.edit(locked=False)
         await soso_timer.role_timer()
         if pdm_menu is not None:
-            cible_soso = await cible_vote(soso_chat, players, sorciere, potion_mort, cupidon)
+            cible_soso = await cible_vote(soso_chat, players, sorciere, potion_mort, cupidon, dico_players, n_nuits)
         if pdv_menu is None and cible_soso is not None:
             del pdm_menu
             return cible_lg, potion_vie, False, cible_soso
@@ -257,6 +257,17 @@ async def action_sorciere(context, soso_chat, sorciere, players, n_nuits, potion
     else:
         return cible_lg, potion_vie, potion_mort, cible_soso
 
+async def action_chasseur(context, players, dico_players, chasseur, n_nuits, potion_mort, cupidon):
+    chasseur_timer = Timer(context, 10, n_nuits)
+    balle = await menu(context, players, "Selectionnez la personne sur laquelle vous allez tirer dessus.", dico_players,
+                          chasseur)  # Sélection de qui va mourir du chasseur
+    await chasseur_timer.role_timer()
+    cible_chasseur = await cible_vote(context, players, chasseur, potion_mort, cupidon, dico_players, n_nuits)
+    del balle
+    if cible_chasseur is not None:
+        await death(context, players, cible_chasseur, "Chasseur", dico_players, n_nuits, potion_mort, cupidon)
+    else:
+        await context.send(content=f"Le chasseur a décidé de ne pas tirer")
 
 async def dico_joueurs(context, players):
     dico = {}
@@ -283,7 +294,7 @@ def maxi_vote(players: list):
     return maxi
 
 
-async def cible_vote(context, players, voteur, potion_mort, cupidon):
+async def cible_vote(context, players, voteur, potion_mort, cupidon, dico_players, n_nuits):
     """renvoie la cible du vote"""
     cible = []
     maxi = maxi_vote(players)
@@ -313,12 +324,7 @@ async def cible_vote(context, players, voteur, potion_mort, cupidon):
     elif counter == 1: #1 personne voté en majorité
         #VOTE VILLAGE
         if voteur == None:
-            await context.send(content=f"<@{cible[0].id}> a été tué par le village. ({maxi} vote(s))")
-            await asyncio.sleep(2)
-            await context.send(content=f"Son rôle était **{cible[0].role}**.")
-            await asyncio.sleep(1)
-            cible[0].state = False
-            players.remove(cible[0])
+            await death(context, players, cible[0], 'Village', dico_players, n_nuits, potion_mort, cupidon, maxi)
             with open("compos/role_mort_id.txt", "r") as f:
                 guild = context.guild
                 role_mort_id = int(f.read())
@@ -332,19 +338,9 @@ async def cible_vote(context, players, voteur, potion_mort, cupidon):
             f.close()
             #MORT AMOUREUX
             if cible[0].amour is not None:
-                cible[0].amour.state = False
                 morts.append(cible[0].amour)
-                await context.send(content=f"<@{cible[0].amour.id}> est mort par chagrin d'amour.")
-                await asyncio.sleep(2)
-                await context.send(content=f"Il était **{cible[0].amour.role}**.")
-                try:
-                    await cible[0].amour.member.edit(mute=True)
-                except discord.errors.HTTPException:
-                    print('User not in vc')
+                await mort_couple(context, players, cible[0].amour, cupidon)
                 await cible[0].amour.member.edit(roles=cible[0].amour.member.roles + [role_mort])
-                players.remove(cible[0].amour)
-                cupidon.camp = 'Village'
-                morts.append(cible[0].amour)
             return morts
         #VOTE LG
         elif type(voteur) == list:
@@ -361,6 +357,9 @@ async def cible_vote(context, players, voteur, potion_mort, cupidon):
         elif voteur.role == "Cupidon":
             await context.send(content=f"Vous n'avez choisi qu'une personne (**{cible[0].name}**), la seconde sera choisi aléatoirement")
             return cible[0] #une des deux personnes du couple
+        #VOTE CHASSEUR
+        elif voteur.role == "Chasseur":
+            return cible[0]
 
     #EGALITE
     else:
@@ -399,58 +398,23 @@ async def ping_couple(couple_chat, select_love):
         await couple_chat.send(content=f"Le **Cupidon**, vous a choisi pour son **Couple**, vous avez accès à ce chat privé afin de communiquer jour comme nuit.")
 
 
-async def annonce_jour(context, cible_lg=None, cible_soso=None, players=[], cupidon=None):
+async def annonce_jour(context, dico_players, n_nuits, potion_mort, cible_lg=None, cible_soso=None, players=[], cupidon=None):
     morts = []
     if cible_lg is not None and cible_lg in players: #cible lg existe
-        cible_lg.state = False
         morts.append(cible_lg)
         print(f"<@{cible_lg.name}> s'est fait(e) dévoré(e) par les Loups cette nuit.")
-        await context.send(content=f"<@{cible_lg.id}> est mort(e) cette nuit.")
-        await asyncio.sleep(2)
-        await context.send(content=f"Il était **{cible_lg.role}**.")
-        try:
-            await cible_lg.member.edit(mute=True)
-        except discord.errors.HTTPException:
-            print('User not in vc')
-        players.remove(cible_lg)
+        await death(context, players, cible_lg, 'Loup Garou', dico_players, n_nuits, potion_mort, cupidon)
         if cible_lg.amour is not None:
-            cible_lg.amour.state = False
             morts.append(cible_lg.amour)
-            await context.send(content=f"<@{cible_lg.amour.id}> est mort par chagrin d'amour.")
-            await asyncio.sleep(2)
-            await context.send(content=f"Il était **{cible_lg.amour.role}**.")
-            try:
-                await cible_lg.amour.member.edit(mute=True)
-            except discord.errors.HTTPException:
-                print('User not in vc')
-            players.remove(cible_lg.amour)
-            cupidon.camp = 'Village'
+            await mort_couple(context, players, cible_lg.amour, cupidon)
 
     if cible_soso is not None and cible_soso in players: #cible soso existe
-        cible_soso.state = False
         morts.append(cible_soso)
         print(f"<@{cible_soso.name}> s'est fait tué(e) par la sorcière cette nuit.")
-        await context.send(content=f"<@{cible_soso.id}> est mort(e) cette nuit.")
-
-        await asyncio.sleep(2)
-        await context.send(content=f"Il était **{cible_soso.role}**.")
-        try:
-            await cible_soso.member.edit(mute=True)
-        except discord.errors.HTTPException:
-            print('User not in vc')
-        players.remove(cible_soso)
+        await death(context, players, cible_lg, 'Sorciere', dico_players, n_nuits, potion_mort, cupidon)
         if cible_soso.amour is not None:
-            cible_soso.amour.state = False
             morts.append(cible_soso.amour)
-            await context.send(content=f"<@{cible_soso.amour.id}> est mort par chagrin d'amour.")
-            await asyncio.sleep(2)
-            await context.send(content=f"Il était **{cible_soso.amour.role}**.")
-            try:
-                await cible_soso.amour.member.edit(mute=True)
-            except discord.errors.HTTPException:
-                print('User not in vc')
-            players.remove(cible_soso.amour)
-            cupidon.camp = 'Village'
+            await mort_couple(context, players, cible_soso.amour, cupidon)
     if morts == []: #cas où personne n'a été ciblé
         await context.send(content=f"Personne n'est mort cette nuit.")
     else: #cas où au moins une personne a été ciblée
@@ -468,14 +432,30 @@ async def annonce_jour(context, cible_lg=None, cible_soso=None, players=[], cupi
 
 #endroit
 
+async def death(context, players, mort, tueur, dico_players, n_nuits, potion_mort, cupidon, nbr_votes=None):
+    players.remove(mort)
+    if tueur == 'Sorciere' or tueur == 'Loup Garou':
+        await context.send(content=f"<@{mort.id}> est mort(e) cette nuit.")
+    elif tueur == 'Village':
+        await context.send(content=f"<@{mort.id}> a été tué par le village. ({nbr_votes} vote(s))")
+    elif tueur == "Chasseur":
+        await context.send(content=f"<@{mort.id}> s'est fait tiré dessus par le chasseur")
+    await asyncio.sleep(2)
+    await context.send(content=f"Il était **{mort.role}**")
+    if mort.role == 'Chasseur':
+        await context.edit(locked=False)
+        await action_chasseur(context, players, dico_players, mort, n_nuits, potion_mort, cupidon)
+        await context.edit(locked=True)
+    mort.state = False
 
 
-
-
-
-
-
-
+async def mort_couple(context, players, mort, cupidon):
+    mort.state = False
+    await context.send(content=f"<@{mort.id}> est mort par chagrin d'amour.")
+    await asyncio.sleep(2)
+    await context.send(content=f"Il était **{mort.role}**.")
+    players.remove(mort)
+    cupidon.camp = "Village"
 
 
 async def nom_façade(context, lgs):
@@ -510,16 +490,19 @@ async def start(context):
 
     cupidon, voyante, lgs, pf, sorciere = None, None, [], None, None
     for player in players:
-        if player.role == "Cupidon":
-            cupidon = player
-        if player.role == "Voyante":
-            voyante = player
         if player.role == "Loup Garou":
             lgs.append(player)
-        if player.role == "Petite Fille":
+        elif player.role == "Cupidon":
+            cupidon = player
+        elif player.role == "Voyante":
+            voyante = player
+        elif player.role == "Petite Fille":
             pf = player
-        if player.role == "Sorciere":
+        elif player.role == "Sorciere":
             sorciere = player
+        elif player.role == "Chasseur":
+            chasseur = player
+
     roles_nuit = [cupidon, voyante, lgs, pf, sorciere]
     await annonce_role(context, players) #annonce des roles par dm
 
@@ -565,7 +548,7 @@ async def start(context):
     await asyncio.sleep(1)
 
     #CUPIDON
-    select_love = await action_cupidon(context, cupi_chat, cupidon, players, dico_players, n_jours, potion_mort) #renvoie l'objet de la class selectviewcupi
+    select_love = await action_cupidon(context, cupi_chat, cupidon, players, dico_players, n_jours, potion_mort, dico_players) #renvoie l'objet de la class selectviewcupi
     await cupi_chat.edit(locked=True)
     await ping_couple(couple_chat, select_love)
 
@@ -574,7 +557,7 @@ async def start(context):
     await action_voyante(context, vovo_chat, voyante, players, n_jours, dico_players) #vovo choisis cible
     await vovo_chat.edit(locked=True) #lock le chat de la vovo
     if voyante is not None:
-        cible_vovo = await cible_vote(vovo_chat, players, voyante, potion_mort, cupidon)
+        cible_vovo = await cible_vote(vovo_chat, players, voyante, potion_mort, cupidon, dico_players, n_jours)
         if cible_vovo is not None:
             await vovo_chat.send(f"La personne que vous avez espionné est **{cible_vovo.role}**.")#cible est récup ici (type class player)
             await reset_votes(context, players) #vote reset
@@ -582,7 +565,7 @@ async def start(context):
     #LOUP GAROU
     await action_lg(context, lg_chat, lgs, players, n_jours, dico_players) #lgs choisissent cible
     await lg_chat.edit(locked=True) #lock chat des lgs
-    cible_lg = await cible_vote(lg_chat, players, lgs, potion_mort, cupidon)
+    cible_lg = await cible_vote(lg_chat, players, lgs, potion_mort, cupidon, dico_players, n_jours)
     await reset_votes(context, players) #vote reset
 
     #SORCIERE
@@ -593,7 +576,7 @@ async def start(context):
     #ANNONCE DES MORTS ET DIVERS
     await unmute_all(context, players)
     await asyncio.sleep(1)
-    morts += await annonce_jour(context, cible_lg, cible_soso, players, cupidon)
+    morts += await annonce_jour(context, dico_players, n_jours, potion_mort, cible_lg, cible_soso, players, cupidon)
 
     n_jours += 1
     game_state = await is_game_over(context, players)  # True = le jeu est en cours, False = le jeu est fini
@@ -611,7 +594,7 @@ async def start(context):
         vote = Timer(context, 30, n_jours=0)
         await vote.vote_village(players=players, dico_players=dico_players) #commence le vote du village
         await asyncio.sleep(1)
-        morts += await cible_vote(context, players, None, potion_mort, cupidon) #annonce les résultats et la mort de la personne voté
+        morts += await cible_vote(context, players, None, potion_mort, cupidon, dico_players, n_jours) #annonce les résultats et la mort de la personne voté
         await reset_votes(context, players) #remet les compteurs de vote a 0
 
         #GAME OVER?
@@ -632,7 +615,7 @@ async def start(context):
         await action_voyante(context, vovo_chat, voyante, players, n_jours, dico_players) #vovo choisis cible
         await vovo_chat.edit(locked=True) #lock le chat de la vovo
         if voyante is not None:
-            cible_vovo = await cible_vote(vovo_chat, players, voyante, potion_mort, cupidon)
+            cible_vovo = await cible_vote(vovo_chat, players, voyante, potion_mort, cupidon, dico_players, n_jours)
             if cible_vovo is not None:
                 await vovo_chat.send(f"La personne que vous avez espionné est **{cible_vovo.role}**.")#cible est récup ici (type class player)
                 await reset_votes(context, players) #vote reset
@@ -641,7 +624,7 @@ async def start(context):
         #LOUP GAROU
         await action_lg(context, lg_chat, lgs, players, n_jours, dico_players) #lgs choisissent cible
         await lg_chat.edit(locked=True) #lock chat des lgs
-        cible_lg = await cible_vote(lg_chat, players, lgs, potion_mort, cupidon)
+        cible_lg = await cible_vote(lg_chat, players, lgs, potion_mort, cupidon, dico_players, n_jours)
         await reset_votes(context, players) #vote reset
 
         #SORCIERE
@@ -653,7 +636,7 @@ async def start(context):
         #ANNONCE DES MORTS
         await unmute_all(context, players)
         await asyncio.sleep(1)
-        morts += await annonce_jour(context, cible_lg, cible_soso, players, cupidon)
+        morts += await annonce_jour(context, dico_players, n_jours, potion_mort, cible_lg, cible_soso, players, cupidon)
 
 
         game_state = await is_game_over(context, players)
