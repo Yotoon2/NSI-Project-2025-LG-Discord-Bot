@@ -284,6 +284,7 @@ async def annonce_role(context, players: list):
         user = await bot.fetch_user(f"{player.id}") #trouve l'utilisateur discord du joueur a partir de l'ID
         channel = await user.create_dm() #créé le dm avec le joueur
         await channel.send(f"Ton rôle est: {player.role}") #envoie du role au joueur par dm
+        await channel.send(file=discord.File(f'./cartes/{player.role}.png'))
 
 def maxi_vote(players: list):
     """trouve le maximum d'un vote"""
