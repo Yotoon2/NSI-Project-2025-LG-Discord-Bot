@@ -23,54 +23,52 @@ class SelectVote(discord.ui.Select):
     async def sys_vote(self, interaction, choice, personne_votee, voteur):
         #VOTEUR A DEJA VOTER QLQN D'AUTRE
         if voteur.state == True and voteur.previous_vote != None and (self.player == None or voteur.role == self.player.role):
-            author = interaction.user.id
             voteur.previous_vote.nvote -= 1
-            voteur.previous_vote = personne_votee
             personne_votee.nvote += 1
             if self.player == None:
-                await interaction.followup.send(
-                    f"<@{author}> a voté pour <@{personne_votee.id}>. **{personne_votee.nvote}** vote(s)")
-            elif self.player.role == "Voyante" and self.player.id == author:
+                await interaction.followup.send(f"<@{voteur.id}> a voté pour <@{personne_votee.id}>. **{personne_votee.nvote}** vote(s)")
+                await interaction.followup.send(f"<@{voteur.previous_vote.id}> ne possède maintenant que **{voteur.previous_vote.nvote}** vote(s)")
+            elif self.player.role == "Voyante":
                 await interaction.followup.send(f"Vous avez décidé d'espionner **{personne_votee.name}**.")
-            elif self.player.role == "Loup Garou" and self.player.id == author:
-                await interaction.followup.send(f"<@{author}> veut dévorer **{personne_votee.name}**. **{personne_votee.nvote}** vote(s)")
-            elif self.player.role == "Sorciere" and self.player.id == author:
+            elif self.player.role == "Loup Garou":
+                await interaction.followup.send(f"<@{voteur.id}> veut dévorer **{personne_votee.name}**. **{personne_votee.nvote}** vote(s)")
+            elif self.player.role == "Sorciere":
                 await interaction.followup.send(f"Vous avez décidé de tuer **{personne_votee.name}**.")
+            voteur.previous_vote = personne_votee
+
         #VOTEUR N'A VOTER PERSONNE
         elif voteur.state == True and voteur.previous_vote == None and (self.player == None or voteur.role == self.player.role):
-            author = interaction.user.id
             voteur.previous_vote = personne_votee
             personne_votee.nvote += 1
             if self.player == None:
-                await interaction.followup.send(f"<@{author}> a voté pour <@{personne_votee.id}>. **{personne_votee.nvote}** vote(s)")
-            elif self.player.role == "Voyante" and self.player.id == author:
+                await interaction.followup.send(f"<@{voteur.id}> a voté pour <@{personne_votee.id}>. **{personne_votee.nvote}** vote(s)")
+            elif self.player.role == "Voyante":
                 await interaction.followup.send(f"Vous avez décidé d'espionner **{personne_votee.name}**.")
-            elif self.player.role == "Loup Garou" and self.player.id == author:
-                await interaction.followup.send(f"<@{author}> veut dévorer **{personne_votee.name}**. **{personne_votee.nvote}** vote(s)")
-            elif self.player.role == "Sorciere" and self.player.id == author:
+            elif self.player.role == "Loup Garou":
+                await interaction.followup.send(f"<@{voteur.id}> veut dévorer **{personne_votee.name}**. **{personne_votee.nvote}** vote(s)")
+            elif self.player.role == "Sorciere":
                 await interaction.followup.send(f"Vous avez décidé de tuer **{personne_votee.name}**.")
-            elif self.player.role == "Chasseur" and self.player.id == author:
-                await interaction.followup.send(f"<@{author}> a décidé de tirer sur **<@{personne_votee.id}>**")
+            elif self.player.role == "Chasseur":
+                await interaction.followup.send(f"<@{voteur.id}> a décidé de tirer sur **<@{personne_votee.id}>**")
 
         #PREMIERE INTERACTION
         elif voteur.state == True and interaction.response.is_done() == False and (self.player == None or voteur.role == self.player.role):
             if choice == f"{personne_votee.name}" and personne_votee.previous_vote == None:
-                author = interaction.user.id
                 voteur.previous_vote = personne_votee
                 personne_votee.nvote += 1
                 if self.player.role == None:
-                    await interaction.response.send_message( f"<@{author}> a voté pour <@{personne_votee.id}>. **{personne_votee.nvote}** vote(s)", ephemeral=False)
-                elif self.player.role == "Voyante" and self.player.id == author:
+                    await interaction.response.send_message(f"<@{voteur.id}> a voté pour <@{personne_votee.id}>. **{personne_votee.nvote}** vote(s)", ephemeral=False)
+                elif self.player.role == "Voyante":
                     await interaction.response.send_message(f"Vous avez décidé d'espionner **{personne_votee.name}**.", ephemeral=False)
-                elif self.player.role == "Loup Garou" and self.player.id == author:
-                    await interaction.response.send_message(f"<@{author}> veut dévorer **{personne_votee.name}**. **{personne_votee.nvote}** vote(s)", ephemeral=False)
-                elif self.player.role == "Sorciere" and self.player.id == author:
+                elif self.player.role == "Loup Garou":
+                    await interaction.response.send_message(f"<@{voteur.id}> veut dévorer **{personne_votee.name}**. **{personne_votee.nvote}** vote(s)", ephemeral=False)
+                elif self.player.role == "Sorciere":
                     await interaction.response.send_message(f"Vous avez décidé de tuer **{personne_votee.name}**.", ephemeral=False)
-                elif self.player.role == "Chasseur" and self.player.id == author:
-                    await interaction.response.send_message(f"<@{author}> a décidé de tirer sur **<@{personne_votee.id}>**")
+                elif self.player.role == "Chasseur":
+                    await interaction.response.send_message(f"<@{voteur.id}> a décidé de tirer sur **<@{personne_votee.id}>**")
 
         else:
-            await interaction.followup.send(f"<@{voteur.id}> vous n'avez pas la permission d'intéragir")
+            await interaction.followup.send(f"Vous n'avez pas la permission d'intéragir.", ephemeral=True)
 
 class SelectView(discord.ui.View):
     """permet d'afficher le menu deroulant"""

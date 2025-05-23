@@ -9,7 +9,7 @@ class SelectLove(discord.ui.Select):
         self.couple = []
         options = []
         for player in self.players:
-            options.append(discord.SelectOption(label=f"{player.member.display_name}"))
+            options.append(discord.SelectOption(label=f"{player.member.display_name}", value=f"{player.name}"))
         super().__init__(placeholder="Select an option",max_values=2,min_values=2,options=options)
 
     async def callback(self, interaction: discord.Interaction):

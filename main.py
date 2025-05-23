@@ -26,7 +26,6 @@ async def button(context, potion_vie, cible_lg):
                                     view=bouton_soso) # Send a message with our View class that contains the button
     potion_vie = bouton_soso.potion_vie
     return bouton_soso
-    #return potion_vie
 
 async def menu(context, players: list, text: str, dico_players: dict, player=None): #Select est la classe a afficher, player est le joueur avec un role qui agit de nuit s'il y en a un
     """fonction pour menu deroulant"""
@@ -168,10 +167,8 @@ async def action_cupidon(context, cupi_chat, cupidon, players: list, dico: dict,
         message_menu, affichage_menu = await cupi_menu(cupi_chat, players, dico,
                                             text="Choisissez les deux joueurs qui deviendront les membres du couple. Si vous ne choisissez pas, il sera choisi aléatoirement.")
         await cupi_chat.edit(locked=False)
-        #await context.channel.set_permissions(cupidon.member, send_messages_in_threads=False)
         cupi_timer = Timer(cupi_chat, 15, n_nuits)
         await cupi_timer.role_timer()
-        await cible_vote(cupi_chat, players, cupidon, potion_mort, cupidon, dico_players, n_nuits)
         await message_menu.delete()
 
         if affichage_menu.selectlove.couple == []:
@@ -182,7 +179,8 @@ async def action_cupidon(context, cupi_chat, cupidon, players: list, dico: dict,
                 amoureux = random.choice(random_choice)
                 affichage_menu.selectlove.couple.append(amoureux)
                 random_choice.remove(amoureux)
-            await cupi_chat.send(f'Les amoureux seront donc : {affichage_menu.selectlove.couple[0].name} et {affichage_menu.selectlove.couple[1].name}')
+            await cupi_chat.send(f'Vous avez décidé de laisser le hasard choisir votre couple.')
+            await cupi_chat.send(f'Le couple choisi aléatoirement est : **{affichage_menu.selectlove.couple[0].name}** :revolving_hearts: **{affichage_menu.selectlove.couple[1].name}** <:doge:1375133482862248007>')
         return affichage_menu.selectlove
 
 async def action_voyante(context, vovo_chat, voyante, players, n_nuits, dico_players):
@@ -190,7 +188,6 @@ async def action_voyante(context, vovo_chat, voyante, players, n_nuits, dico_pla
         await context.send("C'est au tour de la **Voyante**.")
         bdc = await menu(vovo_chat, players,"Choisissez la personne dont vous voulez révéler le rôle.", dico_players, voyante)
         await vovo_chat.edit(locked=False)
-        #await context.channel.set_permissions(voyante.member, send_messages_in_threads=False)
         vovo_timer = Timer(vovo_chat, 15, n_nuits)
         await vovo_timer.role_timer()
         await bdc.delete()
@@ -279,12 +276,12 @@ async def dico_joueurs(context, players):
 
 async def annonce_role(context, players: list):
     """Envoie le role de chacun des! joueurs par dm et ajoute les joueurs au thread privé"""
+
     for player in players: #parcours de tous les joueurs en jeu
-        await context.send(f"<@{player.id}>") #mentions des joueurs dans le thread privé
-        user = await bot.fetch_user(f"{player.id}") #trouve l'utilisateur discord du joueur a partir de l'ID
+        await context.send(f"<@{player.id}>") #mentions des joueurs dans le thread privé "Le Village"
+        user = await bot.fetch_user(player.id) #trouve l'utilisateur discord du joueur a partir de l'ID
         channel = await user.create_dm() #créé le dm avec le joueur
-        await channel.send(f"Ton rôle est: {player.role}") #envoie du role au joueur par dm
-        await channel.send(file=discord.File(f'./cartes/{player.role}.png'))
+        await channel.send(f"Ton rôle est: {player.role}", file=discord.File(f'./cartes/{player.role}.png')) #envoie du role au joueur par dm
 
 def maxi_vote(players: list):
     """trouve le maximum d'un vote"""
@@ -317,9 +314,6 @@ async def cible_vote(context, players, voteur, potion_mort, cupidon, dico_player
             return None
         elif voteur.role == "Sorciere" and potion_mort == True and voteur.state == True:
             await context.send(content=f"Vous avez décidé conserver votre potion de mort pour une prochaine nuit.")
-        elif voteur.role == "Cupidon":
-            await context.send(content=f"Vous avez décidé de laisser le hasard choisir votre couple.")
-            return cible
 
 
     elif counter == 1: #1 personne voté en majorité
@@ -354,10 +348,6 @@ async def cible_vote(context, players, voteur, potion_mort, cupidon, dico_player
         elif voteur.role == "Sorciere":
             await context.send(content=f"La personne qui recevra la potion de mort est **{cible[0].name}**.")
             return cible[0]
-        #VOTE CUPIDON
-        elif voteur.role == "Cupidon":
-            await context.send(content=f"Vous n'avez choisi qu'une personne (**{cible[0].name}**), la seconde sera choisi aléatoirement")
-            return cible[0] #une des deux personnes du couple
         #VOTE CHASSEUR
         elif voteur.role == "Chasseur":
             return cible[0]
@@ -431,8 +421,6 @@ async def annonce_jour(context, dico_players, n_nuits, potion_mort, cible_lg=Non
                 await mort.member.edit(roles=mort.member.roles+[role_mort])
     return morts
 
-#endroit
-
 async def death(context, players, mort, tueur, dico_players, n_nuits, potion_mort, cupidon, nbr_votes=None):
     players.remove(mort)
     if tueur == 'Sorciere' or tueur == 'Loup Garou':
@@ -460,7 +448,20 @@ async def mort_couple(context, players, mort, cupidon):
 
 
 async def nom_façade(context, lgs):
-    noms = ["Loup-Garou Gentil", "Loup-Garou Bourré", "Loup-Garou Affamé"]
+    noms = ["Loup-Garou Gentil",
+            "Loup-Garou Bourré",
+            "Loup-Garou Affamé",
+            'Loup-Garou Romantique',
+            "Loup-Garoux",
+            "Loup-Garou Féministe",
+            "Loup-Garou Ikea",
+            "Loup-Garou Séducteur",
+            "Loup-Garou Dealer",
+            "Loup-Garou Platiste",
+            "Loup-Garou Sismographe",
+            "Loup-Garou Hypopotomonstrosesquipédaliophobique",
+            "Loup-Garou Albinos"
+            ]
     for lg in lgs:
         nom = random.choice(noms)
         noms.remove(nom)
