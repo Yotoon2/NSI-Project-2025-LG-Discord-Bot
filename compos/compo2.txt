@@ -1,1 +1,1 @@
-['Chasseur', 'Loup Garou']
+['Loup Garou', 'Sorciere']

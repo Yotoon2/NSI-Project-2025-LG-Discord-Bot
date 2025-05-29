@@ -34,6 +34,8 @@ class SelectVote(discord.ui.Select):
                 await interaction.followup.send(f"<@{voteur.id}> veut dévorer **{personne_votee.name}**. **{personne_votee.nvote}** vote(s)")
             elif self.player.role == "Sorciere":
                 await interaction.followup.send(f"Vous avez décidé de tuer **{personne_votee.name}**.")
+            elif self.player.role == "Chasseur":
+                await interaction.followup.send(f"<@{voteur.id}> a décidé de tirer sur **<@{personne_votee.id}>**")
             voteur.previous_vote = personne_votee
 
         #VOTEUR N'A VOTER PERSONNE

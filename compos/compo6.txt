@@ -1,1 +1,1 @@
-['Sorciere', 'Loup Garou', 'Cupidon', 'Voyante', 'Loup Garou', 'Petite Fille']
+['Sorciere', 'Loup Garou', 'Voyante', 'Chasseur', 'Loup Garou', 'Petite Fille']
